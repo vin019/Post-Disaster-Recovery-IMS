@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDRIMS - Barangay Recovery System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#004D40',
+                        'primary-light': '#00796B'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --p-dark-teal: #004D40;
+            --p-light-teal: #00796B;
+        }
+        .text-primary-dark { color: var(--p-dark-teal); }
+        .bg-primary-dark { background-color: var(--p-dark-teal); }
+        .bg-primary-light { background-color: var(--p-light-teal); }
+        .border-primary-light { border-color: var(--p-light-teal); }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F6FFF7;
+        }
+
+        /* CUSTOM WIDTH: Defining w-70 as 280px for the sidebar */
+        .w-70 {
+             width: 280px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #E0E7FF;
+            transition: all 0.2s;
+            border-left: 5px solid transparent;
+        }
+        .nav-link:hover {
+            background-color: rgba(0, 121, 107, 0.5); 
+            border-left-color: rgba(255, 255, 255, 0.3);
+        }
+        .nav-link.active {
+            background-color: var(--p-light-teal);
+            font-weight: 600;
+            color: white;
+            border-left-color: white;
+        }
+        .nav-link svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+        .stat-card {
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+            position: relative; 
+            min-height: 120px; 
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+        }
+        .required::after {
+            content: ' *';
+            color: #ef4444;
+        }
+    </style>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let app;
+        let db;
+        let auth;
+        let userId = 'loading';
+        let households = [];
+        let aidRecords = [];
+        
+        const updateDashboardMetrics = () => {
+            const totalProfiled = households.length;
+            document.getElementById('stat-profiled-count').textContent = totalProfiled;
+
+            const totallyDestroyed = households.filter(h => h.damageStatus === '100').length;
+            document.getElementById('stat-destroyed-count').textContent = totallyDestroyed;
+            
+            const highPriority = households.filter(h => h.damageStatus === '75' || h.damageStatus === '100').length;
+            document.getElementById('stat-priority-count').textContent = highPriority;
+            
+            let recoveryPercent = 0;
+            if (totalProfiled > 0) {
+                recoveryPercent = Math.min(100, Math.round((aidRecords.length / totalProfiled) * 10)); 
+            }
+            document.getElementById('stat-recovery-percent').textContent = `${recoveryPercent}%`;
+        };
+        
+
+        window.switchContent = (targetId, clickedElement) => {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            const targetSection = document.getElementById(targetId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                
+                const headerTitle = document.getElementById('mainTitle');
+                if (headerTitle) {
+                     headerTitle.textContent = clickedElement.textContent.trim();
+                }
+            }
+
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            clickedElement.classList.add('active');
+        };
+
+        window.addMember = () => {
+            const container = document.getElementById('familyMembersContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'grid grid-cols-1 md:grid-cols-12 gap-4 border-t border-gray-100 pt-3 mt-3 member-row';
+            newRow.innerHTML = `
+                <div class="col-span-12 md:col-span-4">
+                    <input type="text" placeholder="Name (Last, First, Middle)" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                </div>
+                <div class="col-span-6 md:col-span-2">
+                    <input type="number" placeholder="Age" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                </div>
+                <div class="col-span-6 md:col-span-3">
+                    <select class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                        <option value="">Relationship</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Child">Child</option>
+                        <option value="Parent">Parent/In-Law</option>
+                        <option value="Sibling">Sibling</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-span-12 md:col-span-2">
+                    <select class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                        <option value="">Livelihood Status</option>
+                        <option value="Employed">Employed</option>
+                        <option value="Unemployed">Unemployed</option>
+                    </select>
+                </div>
+                <div class="col-span-1 flex justify-end items-center">
+                    <button type="button" onclick="removeMember(this)" class="text-red-500 hover:text-red-700 transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(newRow);
+            lucide.createIcons();
+        };
+
+        window.removeMember = (button) => {
+            const row = button.closest('.member-row');
+            if (row) {
+                row.remove();
+            }
+        };
+
+        window.saveProfile = async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const data = new FormData(form);
+            
+            const householdData = {};
+            data.forEach((value, key) => {
+                householdData[key] = value;
+            });
+
+            const members = [];
+            document.querySelectorAll('#familyMembersContainer .member-row').forEach(row => {
+                const inputs = row.querySelectorAll('input, select');
+                members.push({
+                    name: inputs[0].value,
+                    age: inputs[1].value,
+                    relationship: inputs[2].value,
+                    livelihood: inputs[3].value
+                });
+            });
+
+            householdData.familyMembers = members;
+            householdData.timestamp = new Date().toISOString();
+            householdData.profiledBy = userId;
+
+            const messageElement = document.getElementById('saveMessage');
+            
+            if (db && userId !== 'loading') {
+                try {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                    const collectionPath = `artifacts/${appId}/users/${userId}/household_profiles`;
+                    await addDoc(collection(db, collectionPath), householdData);
+                    
+                    messageElement.textContent = 'Profile saved successfully!';
+                    messageElement.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+                    messageElement.classList.add('bg-green-100', 'text-green-800');
+
+                    form.reset();
+                    document.getElementById('familyMembersContainer').innerHTML = '';
+                    window.addMember();
+
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                    messageElement.textContent = 'Error saving profile. Check console for details.';
+                    messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-yellow-100', 'text-yellow-800');
+                    messageElement.classList.add('bg-red-100', 'text-red-800');
+                }
+            } else {
+                 messageElement.textContent = 'Database not initialized. Profile logged to console.';
+                 messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                 messageElement.classList.add('bg-yellow-100', 'text-yellow-800');
+            }
+
+            setTimeout(() => {
+                 messageElement.classList.add('hidden');
+            }, 5000);
+        };
+
+        const renderHouseholdList = (data) => {
+            const tableBody = document.getElementById('householdTableBody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No household profiles recorded yet.</td></tr>`;
+                return;
+            }
+
+            data.forEach((household, index) => {
+                let damageLabel = 'N/A';
+                const damageStatusMap = {
+                    '0': '0% - Unaffected/No Damage',
+                    '25': '25% - Minor Damage (Superficial)',
+                    '50': '50% - Moderate Damage (Half Loss)',
+                    '75': '75% - Major Damage (Structural Loss)',
+                    '100': '100% - Total Loss/Destroyed'
+                };
+                damageLabel = damageStatusMap[household.damageStatus] || household.damageStatus || 'N/A';
+
+
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50 transition';
+                row.innerHTML = `
+                    <td class="p-4 text-sm font-semibold text-gray-700">${index + 1}</td>
+                    <td class="p-4 text-sm">${household.headName || 'N/A'}</td>
+                    <td class="p-4 text-sm">${household.purok || 'N/A'}</td>
+                    <td class="p-4 text-sm">${damageLabel}</td>
+                    <td class="p-4 text-sm">${household.familyMembers.length || 1}</td>
+                    <td class="p-4 text-sm">
+                        <button class="text-primary-light hover:text-primary-dark transition" onclick="alert('Viewing Household ID: ${household.id}')">View</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        };
+        
+        const populateHouseholdDropdown = (householdsData) => {
+            const select = document.getElementById('aidRecipientId');
+            if (!select) return;
+
+            const placeholder = select.querySelector('option[value=""]');
+            select.innerHTML = '';
+            if (placeholder) {
+                select.appendChild(placeholder);
+            } else {
+                select.innerHTML = '<option value="">Select Household Head (ID: Name)</option>';
+            }
+
+            householdsData.forEach(h => {
+                const option = document.createElement('option');
+                option.value = h.id; 
+                option.textContent = `ID: ${h.id.substring(0, 8)} - ${h.headName || 'Unnamed Head'}`;
+                select.appendChild(option);
+            });
+        };
+
+        window.saveAidRecord = async (event) => {
+            event.preventDefault(); 
+            const form = event.target;
+            const data = new FormData(form);
+            
+            const recordData = {};
+            data.forEach((value, key) => {
+                recordData[key] = value;
+            });
+
+            recordData.dateDistributed = recordData.dateDistributed || new Date().toISOString().split('T')[0];
+            recordData.timestamp = new Date().toISOString();
+            recordData.recordedBy = userId;
+
+            const messageElement = document.getElementById('aidSaveMessage');
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+            if (db && userId !== 'loading') {
+                try {
+                    const collectionPath = `artifacts/${appId}/users/${userId}/aid_distribution`;
+                    await addDoc(collection(db, collectionPath), recordData);
+                    
+                    messageElement.textContent = 'Aid distribution record saved successfully!';
+                    messageElement.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+                    messageElement.classList.add('bg-green-100', 'text-green-800');
+
+                    form.reset();
+
+                } catch (e) {
+                    console.error("Error adding aid record: ", e);
+                    messageElement.textContent = 'Error saving aid record. Check console for details.';
+                    messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-yellow-100', 'text-yellow-800');
+                    messageElement.classList.add('bg-red-100', 'text-red-800');
+                }
+            } else {
+                 messageElement.textContent = 'Database not initialized. Record logged to console.';
+                 messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                 messageElement.classList.add('bg-yellow-100', 'text-yellow-800');
+            }
+
+            messageElement.classList.remove('hidden');
+            setTimeout(() => { messageElement.classList.add('hidden'); }, 5000);
+        };
+
+        const renderAidRecords = (data) => {
+            const tableBody = document.getElementById('aidRecordTableBody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = ''; 
+
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No aid distribution records yet.</td></tr>`;
+                return;
+            }
+
+            data.forEach((record, index) => {
+                const household = households.find(h => h.id === record.aidRecipientId);
+                const headName = household ? household.headName : 'Household Not Found';
+                
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50 transition';
+                row.innerHTML = `
+                    <td class="p-4 text-sm font-semibold text-gray-700">${index + 1}</td>
+                    <td class="p-4 text-sm">${headName} (${record.aidRecipientId.substring(0, 8)})</td>
+                    <td class="p-4 text-sm">${record.aidType || 'N/A'}</td>
+                    <td class="p-4 text-sm">${record.quantity || '1'}</td>
+                    <td class="p-4 text-sm">${record.dateDistributed || 'N/A'}</td>
+                    <td class="p-4 text-sm">
+                        <button class="text-red-600 hover:text-red-800 transition" onclick="alert('Viewing Aid Record ID: ${record.id}')">View</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        };
+        
+        window.generateReport = (format) => {
+            const filterPurok = document.getElementById('reportPurokFilter').value;
+            const filterDamage = document.getElementById('reportDamageFilter').value;
+            
+            const filteredData = households.filter(h => {
+                const purokMatch = filterPurok === '' || h.purok === filterPurok;
+                const damageMatch = filterDamage === '' || h.damageStatus === filterDamage; 
+                return purokMatch && damageMatch;
+            });
+
+            const resultElement = document.getElementById('reportOutput');
+            resultElement.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'text-green-800', 'text-red-800');
+            
+            if (filteredData.length === 0) {
+                resultElement.textContent = `No households found matching filters (Purok: ${filterPurok || 'All'}, Damage: ${filterDamage || 'All'}).`;
+                resultElement.classList.add('bg-red-100', 'text-red-800');
+            } else {
+                resultElement.textContent = `Generated ${format} report for ${filteredData.length} households matching criteria. Check console for data.`;
+                resultElement.classList.add('bg-green-100', 'text-green-800');
+                console.log(`Report Data (${format}):`, filteredData);
+            }
+            
+            setTimeout(() => { resultElement.classList.add('hidden'); }, 7000);
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const defaultNav = document.querySelector('[data-target="Dashboard"]');
+            if (defaultNav) {
+                window.switchContent('Dashboard', defaultNav);
+            }
+            window.addMember();
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                const targetId = link.getAttribute('data-target');
+                if (targetId) {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.switchContent(targetId, link);
+                    });
+                }
+            });
+
+            document.getElementById('dateDistributed').value = new Date().toISOString().split('T')[0];
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+            if (Object.keys(firebaseConfig).length > 0) {
+                try {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            userId = user.uid;
+                        } else {
+                            userId = crypto.randomUUID(); 
+                        }
+                         
+                        const userIdElement = document.getElementById('userIdDisplay');
+                        if (userIdElement) {
+                            userIdElement.textContent = `User ID: ${userId}`;
+                        }
+
+                        if(db) {
+                             const collectionPath = `artifacts/${appId}/users/${userId}/household_profiles`;
+                             const q = collection(db, collectionPath);
+
+                             onSnapshot(q, (snapshot) => {
+                                 households = [];
+                                 snapshot.forEach(doc => {
+                                     households.push({ id: doc.id, ...doc.data() });
+                                 });
+                                 renderHouseholdList(households);
+                                 populateHouseholdDropdown(households);
+                                 updateDashboardMetrics(); 
+                             }, (error) => {
+                                 console.error("Error fetching household list:", error);
+                             });
+                             
+                             const aidCollectionPath = `artifacts/${appId}/users/${userId}/aid_distribution`;
+                             const aidQ = collection(db, aidCollectionPath);
+                             
+                             onSnapshot(aidQ, (snapshot) => {
+                                 aidRecords = [];
+                                 snapshot.forEach(doc => {
+                                     aidRecords.push({ id: doc.id, ...doc.data() });
+                                 });
+                                 renderAidRecords(aidRecords);
+                                 updateDashboardMetrics(); 
+                             }, (error) => {
+                                 console.error("Error fetching aid records:", error);
+                             });
+                        }
+                    });
+
+
+                } catch (error) {
+                    console.error("Firebase initialization or authentication failed:", error);
+                }
+            } else {
+                const userIdElement = document.getElementById('userIdDisplay');
+                if (userIdElement) {
+                    userIdElement.textContent = `User ID: default-user-id`;
+                }
+            }
+        });
+
+    </script>
+</head>
+<!-- UPDATED: Added p-4 padding back to body for the space around the main panels -->
+<body class="bg-gray-100 p-4">
+
+    <!-- UPDATED: Main Flex Wrapper. Sets a fixed height (viewport height - 2rem padding) -->
+    <div class="flex w-full h-[calc(100vh-2rem)]">
+
+        <!-- Sidebar: Full height of the wrapper, rounded on all 4 corners, and floating. -->
+        <aside id="sidebar" class="w-70 bg-primary-dark flex flex-col shadow-xl z-10 rounded-xl flex-shrink-0 h-full overflow-y-auto">
+
+            <div class="p-6 pt-8 pb-4 border-b border-white/20">
+                <h1 class="text-white text-2xl font-extrabold uppercase tracking-wide">PDRIMS</h1>
+                <p class="text-white/70 text-sm mt-1">Barangay Recovery System</p>
+            </div>
+
+            <nav class="flex-grow mt-4 space-y-1">
+                <a href="#" class="nav-link active" data-target="Dashboard">
+                    <i data-lucide="home"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-link" data-target="HouseholdProfiles">
+                    <i data-lucide="users"></i>
+                    Household Profiles
+                </a>
+                <a href="#" class="nav-link" data-target="AidDistributionRecords">
+                    <i data-lucide="hand-heart"></i>
+                    Aid Distribution Records
+                </a>
+                <a href="#" class="nav-link" data-target="ReportsExports">
+                    <i data-lucide="file-text"></i>
+                    Reports & Exports
+                </a>
+            </nav>
+
+            <div class="p-6 text-xs text-white/70 border-t border-white/10">
+                <p id="userIdDisplay">User ID: loading...</p>
+                <p class="mt-1 flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-green-400 mr-2"></span>
+                    Barangay Official
+                </p>
+            </div>
+        </aside>
+
+        <!-- Main content container: Uses ml-4 to create the space between the sidebar and main panel. -->
+        <div class="flex-grow ml-4 h-full overflow-hidden">
+            <main id="main-content" class="h-full p-8 bg-white shadow-xl rounded-xl overflow-y-auto">
+            
+                <header class="mb-8 pb-4 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-primary-dark" id="mainTitle">Dashboard</h1>
+                        <p class="text-gray-500 mt-1">Overview and real-time statistics for post-disaster monitoring.</p>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-700 bg-red-100 px-4 py-2 rounded-full">
+                        Active Disaster: Typhoon Rolly (2025)
+                    </div>
+                </header>
+
+                <section id="Dashboard" class="content-section hidden">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">Key Metrics</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                        <div class="stat-card border-l-4 border-red-500">
+                            <p class="text-sm font-medium text-gray-600">Affected Households Profiled</p>
+                            <p class="text-4xl font-bold mt-2 text-red-600" id="stat-profiled-count">0</p>
+                            <p class="text-xs text-gray-400 mt-1">Total unique records</p>
+                        </div>
+                        <div class="stat-card border-l-4 border-yellow-500">
+                            <p class="text-sm font-medium text-gray-600">Totally Destroyed Homes (100% Loss)</p>
+                            <p class="text-4xl font-bold mt-2 text-yellow-600" id="stat-destroyed-count">0</p>
+                            <p class="text-xs text-gray-400 mt-1">Needs verification</p>
+                        </div>
+                        <div class="stat-card border-l-4 border-green-500">
+                            <p class="text-sm font-medium text-gray-600">Avg Aid Distribution Rate (Simpl.)</p>
+                            <p class="text-4xl font-bold mt-2 text-green-600" id="stat-recovery-percent">0%</p>
+                            <p class="text-xs text-gray-400 mt-1">Based on total aid records vs households</p>
+                        </div>
+                        <div class="stat-card border-l-4 border-orange-600">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">High Priority Households (>= 75% Damage)</p>
+                                <p class="text-2xl font-bold mt-1 text-orange-600" id="stat-priority-count">0</p>
+                            </div>
+                            <div class="absolute bottom-4 left-4">
+                                <button class="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700 transition shadow-md whitespace-nowrap">
+                                    View List
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-800">Overall Household Recovery Progress Breakdown</h2>
+                    <div class="bg-white p-6 rounded-xl shadow-md h-96 flex items-center justify-center text-gray-400 text-lg border border-gray-100">
+                        [basta here ilalagay yung mga chart chart]
+                    </div>
+
+                </section>
+
+                <section id="HouseholdProfiles" class="content-section hidden">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">Household Profiling Form</h2>
+                    
+                    <div id="saveMessage" class="hidden p-3 rounded-lg text-sm mb-4"></div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100 mb-8">
+                        <form id="householdProfileForm" onsubmit="saveProfile(event)">
+                            
+                            <h3 class="text-xl font-bold text-primary-dark mb-4 border-b pb-2">Household Head & Location Details</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                <div>
+                                    <label for="headName" class="block text-sm font-medium text-gray-700 required">Head of Household Name (Last, First, Middle)</label>
+                                    <input type="text" id="headName" name="headName" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="e.g., Dela Cruz, Juan S.">
+                                </div>
+                                <div>
+                                    <label for="contact" class="block text-sm font-medium text-gray-700">Contact Number</label>
+                                    <input type="text" id="contact" name="contact" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+                                <div>
+                                    <label for="purok" class="block text-sm font-medium text-gray-700 required">Purok/Sitio</label>
+                                    <select id="purok" name="purok" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                        <option value="">Select Purok/Sitio</option>
+                                        <option value="Purok 1">Purok 1</option>
+                                        <option value="Purok 2">Purok 2</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <h3 class="text-xl font-bold text-primary-dark mb-4 border-b pb-2">Disaster Damage Assessment</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label for="damageStatus" class="block text-sm font-medium text-gray-700 required">Damage Status (Percentage of Loss)</label>
+                                    <select id="damageStatus" name="damageStatus" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                        <option value="">Select Damage Level</option>
+                                        <option value="0">0% - Unaffected/No Damage</option>
+                                        <option value="25">25% - Minor Damage (Superficial)</option>
+                                        <option value="50">50% - Moderate Damage (Half Loss)</option>
+                                        <option value="75">75% - Major Damage (Structural Loss)</option>
+                                        <option value="100">100% - Total Loss/Destroyed</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="initialNeeds" class="block text-sm font-medium text-gray-700">Initial Needs (Comma Separated)</label>
+                                    <input type="text" id="initialNeeds" name="initialNeeds" placeholder="e.g., Food, Shelter Kit, Medicine" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+                            </div>
+
+                            <h3 class="text-xl font-bold text-primary-dark mb-4 border-b pb-2">Family Members</h3>
+                            
+                            <div id="familyMembersContainer" class="mb-4">
+                            </div>
+
+                            <button type="button" onclick="addMember()" class="text-sm font-semibold text-primary-light hover:text-primary-dark flex items-center mb-6 transition">
+                                <i data-lucide="plus-circle" class="w-5 h-5 mr-1"></i> Add Another Family Member
+                            </button>
+                            
+                            <button type="submit" class="w-full bg-primary-dark text-white px-4 py-3 rounded-lg text-lg font-semibold hover:opacity-90 transition shadow-lg">
+                                <i data-lucide="save" class="w-5 h-5 inline-block mr-2"></i> Save Household Profile
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-800">Master List of Affected Households</h2>
+                    <div class="bg-white p-0 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Head of Household</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purok/Sitio</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Damage Status</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
+                                    <th scope="col" scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="householdTableBody" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading household data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </section>
+
+                <section id="AidDistributionRecords" class="content-section hidden">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">Record Aid Distribution</h2>
+                    
+                    <div id="aidSaveMessage" class="hidden p-3 rounded-lg text-sm mb-4"></div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100 mb-8">
+                        <form id="aidDistributionForm" onsubmit="saveAidRecord(event)">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                                
+                                <div class="md:col-span-2">
+                                    <label for="aidRecipientId" class="block text-sm font-medium text-gray-700 required">Recipient Household (ID & Name)</label>
+                                    <select id="aidRecipientId" name="aidRecipientId" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                        <option value="">Select Household Head (ID: Name)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="aidType" class="block text-sm font-medium text-gray-700 required">Type of Aid</label>
+                                    <select id="aidType" name="aidType" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                        <option value="">Select Aid Type</option>
+                                        <option value="Food Pack">Food Pack</option>
+                                        <option value="Shelter Kit">Shelter Kit (Tarpaulin/Lumber)</option>
+                                        <option value="Cash Aid">Cash Aid</option>
+                                        <option value="Hygiene Kit">Hygiene Kit</option>
+                                        <option value="Medicine">Medicine</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="quantity" class="block text-sm font-medium text-gray-700">Quantity / Value</label>
+                                    <input type="text" id="quantity" name="quantity" placeholder="e.g., 1 box or Php 5,000" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+                                
+                                <div>
+                                    <label for="dateDistributed" class="block text-sm font-medium text-gray-700 required">Date Distributed</label>
+                                    <input type="date" id="dateDistributed" name="dateDistributed" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+
+                                <div class="md:col-span-3">
+                                    <label for="distributionNotes" class="block text-sm font-medium text-gray-700">Notes / Remarks</label>
+                                    <input type="text" id="distributionNotes" name="distributionNotes" placeholder="e.g., Given to spouse/received 2nd tranche" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+
+                                <div>
+                                    <label for="distributedBy" class="block text-sm font-medium text-gray-700">Distributed By (Optional)</label>
+                                    <input type="text" id="distributedBy" name="distributedBy" placeholder="e.g., MSWD or LGU" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+
+                            </div>
+                            <button type="submit" class="w-full bg-orange-600 text-white px-4 py-3 rounded-lg text-lg font-semibold hover:bg-orange-700 transition shadow-lg">
+                                <i data-lucide="hand-heart" class="w-5 h-5 inline-block mr-2"></i> Record Aid Distribution
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-800">Distribution History (Real-Time)</h2>
+                    <div class="bg-white p-0 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient (Head Name)</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aid Type</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aidRecordTableBody" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading aid distribution data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </section>
+
+                <section id="ReportsExports" class="content-section hidden">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">Generate Official Reports</h2>
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                        <p class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Filter Data for Reporting</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div>
+                                <label for="reportPurokFilter" class="block text-sm font-medium text-gray-700">Filter by Purok/Sitio</label>
+                                <select id="reportPurokFilter" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    <option value="">All Purok/Sitio</option>
+                                    <option value="Purok 1">Purok 1</option>
+                                    <option value="Purok 2">Purok 2</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="reportDamageFilter" class="block text-sm font-medium text-gray-700">Filter by Damage Status</label>
+                                <select id="reportDamageFilter" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    <option value="">All Damage Status</option>
+                                    <option value="0">0% - Unaffected</option>
+                                    <option value="25">25% - Minor Damage</option>
+                                    <option value="50">50% - Moderate Damage</option>
+                                    <option value="75">75% - Major Damage</option>
+                                    <option value="100">100% - Total Loss</option>
+                                </select>
+                            </div>
+                            
+                            <div></div> 
+                        </div>
+
+                        <p class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Generate Report Formats</p>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button onclick="generateReport('CSV')" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-md">
+                                <i data-lucide="file-text" class="w-5 h-5 inline-block mr-2"></i> Export Raw Data (CSV)
+                            </button>
+                            <button onclick="generateReport('PDF')" class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-md">
+                                <i data-lucide="download" class="w-5 h-5 inline-block mr-2"></i> Generate Summary (PDF)
+                            </button>
+                        </div>
+                        
+                        <div id="reportOutput" class="hidden mt-6 p-4 rounded-lg text-sm font-medium transition"></div>
+
+                    </div>
+                </section>
+
+                <script>
+                    lucide.createIcons();
+                </script>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
