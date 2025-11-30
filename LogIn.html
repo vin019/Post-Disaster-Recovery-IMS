@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDRIMS - Viewer Access Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#004D40',
+                        'primary-deep': '#00382E',
+                        'primary-light': '#00796B',
+                        'aid-color': '#A27500',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f7f7f7;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #bdbdbd;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 77, 64, 0.85), rgba(0, 121, 107, 0.75)), url('disaster2.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+        }
+
+        .modal {
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <i data-lucide="shield-check" class="w-7 h-7 text-primary-dark mr-2"></i>
+                    <span class="text-xl font-extrabold text-primary-dark tracking-tight">PDRIMS</span>
+                    <span class="hidden sm:inline text-sm font-light text-gray-500 ml-2 border-l pl-2">Viewer Access</span>
+                </div>
+
+                <nav class="flex items-center space-x-3">
+                    <button id="loginButton" class="flex items-center text-primary-dark font-medium px-4 py-2 rounded-lg border-2 border-transparent hover:border-primary-light transition duration-150">
+                        <i data-lucide="log-in" class="w-4 h-4 mr-1"></i>
+                        Login
+                    </button>
+                    <button id="signUpButton" class="bg-primary-dark text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-primary-light transition duration-150 transform hover:scale-[1.02]">
+                        <i data-lucide="user-plus" class="w-4 h-4 inline-block mr-1"></i>
+                        Sign Up
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <section class="hero-section py-24 sm:py-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-3xl sm:text-4xl lg:text-4xl font-extrabold leading-tight mb-4 tracking-wider">
+                    Streamlining Recovery, From Your Barangay
+                </h1>
+                <p class="text-lg sm:text-xl font-light opacity-80 max-w-3xl mx-auto mb-8">
+                    Access public summaries and real-time status updates on post-disaster recovery efforts in your community.
+                </p>
+                <a href="#feature-blocks" class="inline-flex items-center justify-center bg-white text-primary-dark font-bold text-base px-7 py-3 rounded-full shadow-xl hover:bg-gray-100 transition duration-300 transform hover:scale-105">
+                    View Public Reports
+                    <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                </a>
+            </div>
+        </section>
+
+        <div id="feature-blocks" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-16 sm:-mt-20 relative z-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+               
+                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer" data-action="explore-damage">
+                    <div class="text-5xl font-extrabold mb-3 text-primary-light">1</div>
+                    <h3 class="text-xl font-bold mb-2">Household Damage Status</h3>
+                    <p class="text-sm text-gray-700 mb-4">See aggregated data on the extent of damage to homes across different puroks and sitios.</p>
+                    <a href="#" data-action="explore-damage" class="action-link mt-3 text-xs font-medium border-b border-primary-dark pb-1 text-primary-dark hover:opacity-75 inline-flex items-center">
+                        Explore Data <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
+                    </a>
+                </div>
+
+                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer" data-action="check-aid">
+                    <div class="text-5xl font-extrabold mb-3 text-aid-color">2</div>
+                    <h3 class="text-xl font-bold mb-2">Aid Allocation Reports</h3>
+                    <p class="text-sm text-gray-700 mb-4">View transparency reports detailing the types and quantities of aid distributed by date and location.</p>
+                    <a href="#" data-action="check-aid" class="action-link mt-3 text-xs font-medium border-b border-aid-color pb-1 text-aid-color hover:opacity-75 inline-flex items-center">
+                        Check Records <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
+                    </a>
+                </div>
+
+                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer" data-action="see-timeline">
+                    <div class="text-5xl font-extrabold mb-3 text-primary-dark">3</div>
+                    <h3 class="text-xl font-bold mb-2">Overall Recovery Progress</h3>
+                    <p class="text-sm text-gray-700 mb-4">Monitor the barangay's overall recovery percentage based on official assessments and data input.</p>
+                    <a href="#" data-action="see-timeline" class="action-link mt-3 text-xs font-medium border-b border-primary-dark pb-1 text-primary-dark hover:opacity-75 inline-flex items-center">
+                        See Timeline <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+        <section class="py-16 bg-gray-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Are you a Barangay Official?</h2>
+                <p class="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
+                    Log in to your account to manage household profiles, record aid distribution, and generate official documentation.
+                </p>
+                <button id="accessManagementButton" class="bg-primary-dark text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:bg-primary-light transition duration-300 transform hover:translate-y-0.5">
+                    <i data-lucide="lock" class="w-5 h-5 inline-block mr-2"></i> Access Management Portal
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-primary-deep text-white py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <p>&copy; 2025 PDRIMS. All rights reserved.</p>
+            <p class="mt-1">Mojo Jojo and the Powerpuff Girls</p>
+        </div>
+    </footer>
+
+    <div id="universalModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 invisible opacity-0">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6 relative transform transition-all duration-300 scale-95 modal-content">
+            <button id="closeModalButton" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+           
+            <div id="modalBody">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const universalModal = document.getElementById('universalModal');
+        const modalBody = document.getElementById('modalBody');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const loginButton = document.getElementById('loginButton');
+        const signUpButton = document.getElementById('signUpButton');
+        const accessManagementButton = document.getElementById('accessManagementButton');
+        const featureLinks = document.querySelectorAll('.action-link');
+        const featureBlocks = document.querySelectorAll('[data-action]');
+
+        function showModal(contentHTML) {
+            modalBody.innerHTML = contentHTML;
+            universalModal.classList.remove('invisible', 'opacity-0');
+            universalModal.classList.add('visible', 'opacity-100');
+            lucide.createIcons();
+        }
+
+        function hideModal() {
+            universalModal.classList.remove('visible', 'opacity-100');
+            universalModal.classList.add('invisible', 'opacity-0');
+            modalBody.innerHTML = '';
+        }
+
+        closeModalButton.addEventListener('click', hideModal);
+        universalModal.addEventListener('click', (e) => {
+            if (e.target === universalModal) {
+                hideModal();
+            }
+        });
+
+        function getPurokQuestionModal() {
+            return `
+                <h2 class="text-2xl font-bold text-primary-dark mb-2">Community Registration</h2>
+                <p class="text-sm text-gray-500 mb-6">Are you a registered resident and member of this Purok?</p>
+               
+                <div class="space-y-4">
+                    <button onclick="showSignupForm(true)" class="w-full flex items-center justify-center bg-primary-dark text-white font-semibold py-3 rounded-lg shadow-md hover:bg-primary-light transition duration-150 transform hover:scale-[1.01]">
+                        <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> Yes, I am a member
+                    </button>
+                    <button onclick="showSignupForm(false)" class="w-full flex items-center justify-center bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg shadow-md hover:bg-gray-300 transition duration-150 transform hover:scale-[1.01]">
+                        <i data-lucide="x-circle" class="w-5 h-5 mr-2"></i> No, I am not a member
+                    </button>
+                </div>
+               
+                <p class="mt-6 text-center text-sm text-gray-500 cursor-pointer hover:text-primary-dark" onclick="toggleAuthModal('Login')">
+                    Already registered? Login
+                </p>
+            `;
+        }
+
+        function getSignupFormModal(isMember) {
+            const title = isMember ? 'Purok Member Registration' : 'General Viewer Registration';
+            const subtitle = isMember
+                ? 'Please complete your household and personal details for full access.'
+                : 'Enter your basic details to create a general viewer account.';
+           
+            const memberFields = isMember ? `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-1 mb-4">
+                        <label for="purok" class="block text-sm font-medium text-gray-700 mb-1">Purok/Sitio</label>
+                        <input type="text" id="purok" name="purok" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="e.g., Purok 3" required>
+                    </div>
+                    <div class="col-span-1 mb-4">
+                        <label for="contact" class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                        <input type="tel" id="contact" name="contact" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="e.g., 09123456789" required>
+                    </div>
+                </div>
+               
+                <div class="grid grid-cols-2 gap-4">
+                     <div class="col-span-1 mb-4">
+                        <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                        <input type="number" id="age" name="age" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" min="12" max="120" required>
+                    </div>
+                    <div class="col-span-1 mb-4">
+                        <label for="householdHead" class="block text-sm font-medium text-gray-700 mb-1">Household Head</label>
+                        <input type="text" id="householdHead" name="householdHead" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="Name of Household Head" required>
+                    </div>
+                </div>
+
+                <div class="flex items-center mb-6">
+                    <input id="isHead" name="isHead" type="checkbox" class="h-4 w-4 text-primary-dark border-gray-300 rounded focus:ring-primary-light">
+                    <label for="isHead" class="ml-2 block text-sm text-gray-900">
+                        I am the Head of the Household
+                    </label>
+                </div>
+            ` : `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-1 mb-4">
+                        <label for="contact" class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                        <input type="tel" id="contact" name="contact" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="e.g., 09123456789" required>
+                    </div>
+                    <div class="col-span-1 mb-4">
+                        <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                        <input type="number" id="age" name="age" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" min="12" max="120" required>
+                    </div>
+                </div>
+            `;
+           
+            const commonFields = `
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <div class="col-span-1">
+                        <label for="surname" class="block text-sm font-medium text-gray-700 mb-1">Surname</label>
+                        <input type="text" id="surname" name="surname" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" required>
+                    </div>
+                    <div class="col-span-1">
+                        <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                        <input type="text" id="firstName" name="firstName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" required>
+                    </div>
+                    <div class="col-span-1">
+                        <label for="middleInitial" class="block text-sm font-medium text-gray-700 mb-1">M.I.</label>
+                        <input type="text" id="middleInitial" name="middleInitial" maxlength="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" required>
+                    </div>
+                </div>
+           
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="you@example.com" required>
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="••••••••" required>
+                </div>
+                <div class="mb-6">
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="••••••••" required>
+                </div>
+            `;
+
+            return `
+                <h2 class="text-2xl font-bold text-primary-dark mb-2">${title}</h2>
+                <p class="text-sm text-gray-500 mb-6">${subtitle}</p>
+                <form onsubmit="handleSignupSubmit(event, ${isMember})">
+                    ${commonFields}
+
+                    ${memberFields}
+
+                    <button type="submit" class="w-full bg-primary-dark text-white font-semibold py-2.5 rounded-lg shadow-md hover:bg-primary-light transition duration-150">
+                        Sign Up
+                    </button>
+                    <p class="mt-4 text-center text-sm text-gray-500 cursor-pointer hover:text-primary-dark" onclick="toggleAuthModal('Login')">
+                        Already registered? Login
+                    </p>
+                    <p class="mt-2 text-center text-xs text-gray-400 cursor-pointer hover:text-primary-light" onclick="showPurokMembershipQuestion()">
+                        <i data-lucide="arrow-left" class="w-3 h-3 inline-block"></i> Back to Membership Question
+                    </p>
+                </form>
+            `;
+        }
+       
+        function getUserAuthModal(type) {
+            const isLogin = type === 'Login';
+            const title = isLogin ? 'Viewer Login' : 'Create Viewer Account';
+            const subtitle = isLogin ? 'Access your personal recovery updates.' : 'Join your community in recovery efforts.';
+            const submitText = isLogin ? 'Login Securely' : 'Continue to Sign Up';
+            const linkText = isLogin ? 'Need an account? Sign Up' : 'Already registered? Login';
+
+            if (isLogin) {
+                return `
+                    <h2 class="text-2xl font-bold text-primary-dark mb-2">${title}</h2>
+                    <p class="text-sm text-gray-500 mb-6">${subtitle}</p>
+                    <form onsubmit="handleAuthSubmit(event, 'Login')">
+                        <div class="mb-4">
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="you@example.com" required>
+                        </div>
+                        <div class="mb-6">
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="w-full bg-primary-dark text-white font-semibold py-2.5 rounded-lg shadow-md hover:bg-primary-light transition duration-150">
+                            ${submitText}
+                        </button>
+                        <p class="mt-4 text-center text-sm text-gray-500 cursor-pointer hover:text-primary-dark" onclick="showPurokMembershipQuestion()">
+                            ${linkText}
+                        </p>
+                    </form>
+                `;
+            }
+           
+            return getPurokQuestionModal();
+        }
+
+        function getManagementPortalModal() {
+            return `
+                <h2 class="text-2xl font-bold text-aid-color mb-2">Management Portal Access</h2>
+                <p class="text-sm text-gray-500 mb-6">Barangay Officials: Please enter your verified credentials to proceed to the system.</p>
+                <form onsubmit="handleManagementSubmit(event)">
+                    <div class="mb-4">
+                        <label for="officialId" class="block text-sm font-medium text-gray-700 mb-1">Official Verification ID</label>
+                        <input type="text" id="officialId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-aid-color focus:border-aid-color transition" placeholder="e.g., BRGY-XYZ-12345" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="officialPin" class="block text-sm font-medium text-gray-700 mb-1">Official Password / PIN</label>
+                        <input type="password" id="officialPin" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-aid-color focus:border-aid-color transition" placeholder="••••••••" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="barangayCode" class="block text-sm font-medium text-gray-700 mb-1">Barangay Code</label>
+                        <input type="text" id="barangayCode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-aid-color focus:border-aid-color transition" placeholder="Unique Barangay Security Code" required>
+                    </div>
+                    <button type="submit" class="w-full bg-aid-color text-white font-semibold py-2.5 rounded-lg shadow-md hover:bg-aid-color/90 transition duration-150">
+                        Secure Login
+                    </button>
+                   
+                    <div class="mt-6 pt-4 border-t border-gray-200">
+                        <p class="text-center text-sm text-gray-500 mb-3">Don't have an Official ID yet?</p>
+                        <button type="button" onclick="showRequestAccountModal()" class="w-full text-sm text-primary-dark font-medium py-2 rounded-lg border-2 border-primary-dark hover:bg-primary-dark hover:text-white transition duration-150">
+                            Request Account (Admin Approval)
+                        </button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function getRequestAccountModal() {
+            return `
+                <h2 class="text-2xl font-bold text-primary-light mb-2">Request Official Account</h2>
+                <p class="text-sm text-gray-500 mb-6">Please fill out the form for admin approval. Verification may take 2-3 business days.</p>
+                <form onsubmit="handleRequestSubmit(event)">
+                    <div class="mb-4">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="barangay" class="block text-sm font-medium text-gray-700 mb-1">Barangay Name</label>
+                        <input type="text" id="barangay" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Official Role</label>
+                        <input type="text" id="role" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-light focus:border-primary-light transition" required>
+                    </div>
+                    <button type="submit" class="w-full bg-primary-dark text-white font-semibold py-2.5 rounded-lg shadow-md hover:bg-primary-light transition duration-150">
+                        Submit Request
+                    </button>
+                    <p class="mt-4 text-center text-sm text-gray-500 cursor-pointer hover:text-primary-dark" onclick="showManagementPortalModal()">
+                        <i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1"></i> Back to Login
+                    </p>
+                </form>
+            `;
+        }
+
+        function toggleAuthModal(type) {
+            if (type === 'Sign Up') {
+                showPurokMembershipQuestion();
+            } else {
+                showModal(getUserAuthModal(type));
+            }
+        }
+
+        function showPurokMembershipQuestion() {
+            showModal(getPurokQuestionModal());
+        }
+
+        function showSignupForm(isMember) {
+            showModal(getSignupFormModal(isMember));
+        }
+       
+        function showManagementPortalModal() {
+            showModal(getManagementPortalModal());
+        }
+
+        function showRequestAccountModal() {
+            showModal(getRequestAccountModal());
+        }
+
+        loginButton.addEventListener('click', () => toggleAuthModal('Login'));
+        signUpButton.addEventListener('click', () => toggleAuthModal('Sign Up'));
+
+        accessManagementButton.addEventListener('click', showManagementPortalModal);
+       
+        featureLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const action = this.getAttribute('data-action');
+                showModal(getPlaceholderModal(action));
+            });
+        });
+
+        featureBlocks.forEach(block => {
+            block.addEventListener('click', function(e) {
+                if (e.target.tagName.toLowerCase() === 'a' || e.target.closest('.action-link')) return;
+               
+                const action = this.getAttribute('data-action');
+                showModal(getPlaceholderModal(action));
+            });
+        });
+
+        function getPlaceholderModal(action) {
+            let title, message;
+            if (action === 'explore-damage') {
+                title = "Household Damage Status";
+                message = "This page will display interactive maps and charts showing aggregate household damage data by location (purok/sitio).";
+            } else if (action === 'check-aid') {
+                title = "Aid Allocation Reports";
+                message = "This page will feature a searchable database and summary reports on aid distribution and transparency records.";
+            } else if (action === 'see-timeline') {
+                title = "Overall Recovery Progress";
+                message = "This page will show a dynamic timeline and overall percentage meter of the barangay's post-disaster recovery.";
+            } else {
+                title = "Information";
+                message = "No specific content defined for this action.";
+            }
+
+            return `
+                <h2 class="text-2xl font-bold text-primary-light mb-2">${title}</h2>
+                <p class="text-sm text-gray-500 mb-4">Action Placeholder</p>
+                <div class="p-4 bg-gray-100 rounded-lg border-l-4 border-primary-light">
+                    <p class="text-gray-700">${message}</p>
+                    <p class="mt-2 text-xs font-semibold text-primary-dark">NOTE: The backend is currently not connected.</p>
+                </div>
+                <button onclick="hideModal()" class="mt-6 w-full bg-primary-dark text-white font-semibold py-2 rounded-lg hover:bg-primary-light transition">
+                    Got It
+                </button>
+            `;
+        }
+
+
+        function handleFormSubmit(event, formName) {
+            event.preventDefault();
+            hideModal();
+            showModal(`
+                <h2 class="text-2xl font-bold text-green-600 mb-2">Success (Placeholder)</h2>
+                <p class="text-sm text-gray-500 mb-4">Thank you for submitting the ${formName} form!</p>
+                <div class="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+                    <p class="text-gray-700">In a real application, your data would now be securely processed and a confirmation email would be sent.</p>
+                </div>
+                <button onclick="hideModal()" class="mt-6 w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition">
+                    Close
+                </button>
+            `);
+        }
+
+        function handleSignupSubmit(event, isMember) {
+            event.preventDefault();
+           
+            const form = event.target;
+            const password = form.password.value;
+            const confirmPassword = form.confirmPassword.value;
+           
+            if (password !== confirmPassword) {
+                console.error("Passwords do not match.");
+                alertMessage("Passwords do not match. Please try again.", "error");
+                return;
+            }
+
+            const userData = {
+                type: isMember ? 'Purok Member' : 'General Viewer',
+                name: `${form.surname.value}, ${form.firstName.value} ${form.middleInitial.value}.`,
+                contactNumber: form.contact.value,
+                age: form.age.value,
+                email: form.email.value,
+                password: password,
+            };
+
+            if (isMember) {
+                userData.purok = form.purok.value;
+                userData.isHead = form.isHead.checked;
+                userData.householdHead = form.householdHead.value;
+               
+                if (!userData.isHead && !userData.householdHead.trim()) {
+                    console.error("As a non-head member, you must indicate the Household Head's name.");
+                    alertMessage("As a non-head member, you must indicate the Household Head's name.", "error");
+                    return;
+                }
+            }
+
+            console.log("Registration Data:", userData);
+
+            handleFormSubmit(event, 'Viewer Registration');
+        }
+       
+        function alertMessage(message, type = 'info') {
+            const colors = {
+                info: { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-800' },
+                error: { bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-800' }
+            };
+            const style = colors[type];
+            showModal(`
+                <h2 class="text-2xl font-bold ${style.text} mb-2">${type === 'error' ? 'Error' : 'Notification'}</h2>
+                <p class="text-sm text-gray-500 mb-4">Please correct the following:</p>
+                <div class="p-4 ${style.bg} rounded-lg border-l-4 ${style.border}">
+                    <p class="${style.text}">${message}</p>
+                </div>
+                <button onclick="hideModal()" class="mt-6 w-full bg-gray-500 text-white font-semibold py-2 rounded-lg hover:bg-gray-600 transition">
+                    Dismiss
+                </button>
+            `);
+        }
+
+
+        window.handleAuthSubmit = (event, type) => handleFormSubmit(event, type + ' Authentication');
+        window.handleManagementSubmit = (event) => handleFormSubmit(event, 'Management ID Verification');
+        window.handleRequestSubmit = (event) => handleFormSubmit(event, 'Account Request for Admin Approval');
+        window.handleSignupSubmit = handleSignupSubmit;
+        window.toggleAuthModal = toggleAuthModal;
+        window.showManagementPortalModal = showManagementPortalModal;
+        window.showRequestAccountModal = showRequestAccountModal;
+        window.showPurokMembershipQuestion = showPurokMembershipQuestion;
+        window.showSignupForm = showSignupForm;
+        window.hideModal = hideModal;
+        window.alertMessage = alertMessage;
+
+    </script>
+</body>
+</html>

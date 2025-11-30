@@ -6,6 +6,8 @@
     <title>PDRIMS - Barangay Recovery System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -20,65 +22,157 @@
         }
     </script>
     <style>
+        /* DELETE OR COMMENT OUT THIS LINE: */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
         :root {
-            --p-dark-teal: #004D40;
-            --p-light-teal: #00796B;
-        }
-        .text-primary-dark { color: var(--p-dark-teal); }
-        .bg-primary-dark { background-color: var(--p-dark-teal); }
-        .bg-primary-light { background-color: var(--p-light-teal); }
-        .border-primary-light { border-color: var(--p-light-teal); }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #F6FFF7;
+            /* Refined Teal Palette */
+            --p-dark-teal: #0f5132; /* Deep forest green/teal */
+            --p-medium-teal: #198754; /* Vibrant standard teal */
+            --p-light-teal: #20c997; /* Bright accent teal */
+            --p-surface-teal: #e6fffa; /* Very light background tint */
+            
+            /* Neutrals */
+            --bg-body: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
         }
 
-        /* CUSTOM WIDTH: Defining w-70 as 280px for the sidebar */
-        .w-70 {
-             width: 280px;
+        body {
+        font-family: 'Poppins', sans-serif;  /* Changed from 'Inter' */
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        -webkit-font-smoothing: antialiased;
+        }
+
+        /* Utility Overrides & Custom Classes */
+        .text-primary-dark { color: var(--p-dark-teal); }
+        .bg-primary-dark { background-color: var(--p-dark-teal); }
+        .bg-primary-light { background-color: var(--p-medium-teal); }
+        .text-primary-light { color: var(--p-medium-teal); }
+        .focus\:ring-primary-light:focus { --tw-ring-color: var(--p-light-teal); }
+
+        /* Sidebar Styling */
+        .w-70 { width: 280px; }
+        
+        #sidebar {
+            background: linear-gradient(180deg, var(--p-dark-teal) 0%, #0d4229 100%);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.05);
         }
 
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 12px 24px;
-            font-size: 1rem;
+            padding: 14px 24px;
+            font-size: 0.95rem;
             font-weight: 500;
-            color: #E0E7FF;
-            transition: all 0.2s;
-            border-left: 5px solid transparent;
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            margin-bottom: 4px;
         }
         .nav-link:hover {
-            background-color: rgba(0, 121, 107, 0.5); 
-            border-left-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            padding-left: 28px; /* Subtle slide effect */
         }
         .nav-link.active {
-            background-color: var(--p-light-teal);
-            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.1);
             color: white;
-            border-left-color: white;
+            border-left-color: var(--p-light-teal);
+            font-weight: 600;
         }
         .nav-link svg {
             width: 20px;
             height: 20px;
             margin-right: 12px;
+            opacity: 0.8;
         }
+        .nav-link.active svg { opacity: 1; }
+
+        /* Card & Panel Styling */
         .stat-card {
-            border-radius: 12px;
+            background: white;
+            border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s;
-            position: relative; 
-            min-height: 120px; 
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0,0,0,0.02);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
         .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
         }
-        .required::after {
-            content: ' *';
+        /* Decorative circle for cards */
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.05;
+            z-index: 0;
+        }
+        
+        /* Form Elements */
+        input, select {
+            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+        }
+        input:focus, select:focus {
+            border-color: var(--p-medium-teal);
+            box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2);
+        }
+        label.required::after {
+            content: '*';
             color: #ef4444;
+            margin-left: 4px;
+        }
+
+        /* Buttons */
+        button {
+            transition: all 0.2s active;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Table Styling */
+        table thead th {
+            background-color: #f9fafb;
+            color: #6b7280;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            font-size: 0.75rem;
+        }
+        table tbody tr {
+            transition: background-color 0.15s;
+        }
+        table tbody tr:hover {
+            background-color: #f0fdf4; /* Very light green tint */
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
     
@@ -112,7 +206,7 @@
         };
         
 
-        window.switchContent = (targetId, clickedElement) => {
+        const switchContent = (targetId, clickedElement) => {
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.add('hidden');
             });
@@ -132,7 +226,7 @@
             clickedElement.classList.add('active');
         };
 
-        window.addMember = () => {
+        const addMember = () => {
             const container = document.getElementById('familyMembersContainer');
             const newRow = document.createElement('div');
             newRow.className = 'grid grid-cols-1 md:grid-cols-12 gap-4 border-t border-gray-100 pt-3 mt-3 member-row';
@@ -170,14 +264,14 @@
             lucide.createIcons();
         };
 
-        window.removeMember = (button) => {
+        const removeMember = (button) => {
             const row = button.closest('.member-row');
             if (row) {
                 row.remove();
             }
         };
 
-        window.saveProfile = async (event) => {
+        const saveProfile = async (event) => {
             event.preventDefault();
             const form = event.target;
             const data = new FormData(form);
@@ -210,24 +304,40 @@
                     const collectionPath = `artifacts/${appId}/users/${userId}/household_profiles`;
                     await addDoc(collection(db, collectionPath), householdData);
                     
-                    messageElement.textContent = 'Profile saved successfully!';
+                    messageElement.textContent = 'Profile saved successfully (Synced to Cloud)!';
                     messageElement.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
                     messageElement.classList.add('bg-green-100', 'text-green-800');
 
                     form.reset();
                     document.getElementById('familyMembersContainer').innerHTML = '';
-                    window.addMember();
+                    addMember();
 
                 } catch (e) {
                     console.error("Error adding document: ", e);
-                    messageElement.textContent = 'Error saving profile. Check console for details.';
-                    messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-yellow-100', 'text-yellow-800');
-                    messageElement.classList.add('bg-red-100', 'text-red-800');
+                    messageElement.textContent = 'Error saving to cloud. Saving locally instead...';
+                    
+                    // Fallback to LocalStorage
+                    saveToLocalStorage('households', householdData);
+                    messageElement.textContent = 'Profile saved locally (Offline Mode)!';
+                    messageElement.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+                    messageElement.classList.add('bg-green-100', 'text-green-800');
+                    
+                    form.reset();
+                    document.getElementById('familyMembersContainer').innerHTML = '';
+                    addMember();
+                    loadFromLocalStorage(); // Refresh UI
                 }
             } else {
-                 messageElement.textContent = 'Database not initialized. Profile logged to console.';
+                 // LocalStorage Only
+                 saveToLocalStorage('households', householdData);
+                 messageElement.textContent = 'Profile saved locally!';
                  messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-                 messageElement.classList.add('bg-yellow-100', 'text-yellow-800');
+                 messageElement.classList.add('bg-green-100', 'text-green-800');
+                 
+                 form.reset();
+                 document.getElementById('familyMembersContainer').innerHTML = '';
+                 addMember();
+                 loadFromLocalStorage(); // Refresh UI
             }
 
             setTimeout(() => {
@@ -294,7 +404,7 @@
             });
         };
 
-        window.saveAidRecord = async (event) => {
+        const saveAidRecord = async (event) => {
             event.preventDefault(); 
             const form = event.target;
             const data = new FormData(form);
@@ -316,7 +426,7 @@
                     const collectionPath = `artifacts/${appId}/users/${userId}/aid_distribution`;
                     await addDoc(collection(db, collectionPath), recordData);
                     
-                    messageElement.textContent = 'Aid distribution record saved successfully!';
+                    messageElement.textContent = 'Aid distribution record saved successfully (Synced)!';
                     messageElement.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
                     messageElement.classList.add('bg-green-100', 'text-green-800');
 
@@ -324,14 +434,21 @@
 
                 } catch (e) {
                     console.error("Error adding aid record: ", e);
-                    messageElement.textContent = 'Error saving aid record. Check console for details.';
-                    messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-yellow-100', 'text-yellow-800');
-                    messageElement.classList.add('bg-red-100', 'text-red-800');
+                    // Fallback
+                    saveToLocalStorage('aidRecords', recordData);
+                    messageElement.textContent = 'Aid record saved locally (Offline Mode)!';
+                    messageElement.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+                    messageElement.classList.add('bg-green-100', 'text-green-800');
+                    form.reset();
+                    loadFromLocalStorage();
                 }
             } else {
-                 messageElement.textContent = 'Database not initialized. Record logged to console.';
+                 saveToLocalStorage('aidRecords', recordData);
+                 messageElement.textContent = 'Aid record saved locally!';
                  messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-                 messageElement.classList.add('bg-yellow-100', 'text-yellow-800');
+                 messageElement.classList.add('bg-green-100', 'text-green-800');
+                 form.reset();
+                 loadFromLocalStorage();
             }
 
             messageElement.classList.remove('hidden');
@@ -369,7 +486,374 @@
             });
         };
         
-        window.generateReport = (format) => {
+        const generatePDFReport = () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        // Get filter values
+        const filterPurok = document.getElementById('reportPurokFilter')?.value || '';
+        const filterDamage = document.getElementById('reportDamageFilter')?.value || '';
+        // Apply filters to households
+        let filteredHouseholds = households.filter(h => {
+            let matchesPurok = !filterPurok || h.purok === filterPurok;
+            let matchesDamage = !filterDamage || h.damageStatus === filterDamage;
+            return matchesPurok && matchesDamage;
+        });
+        // Apply filters to aid records
+        let filteredAidRecords = aidRecords.filter(record => {
+            const household = households.find(h => h.id === record.aidRecipientId);
+            if (!household) return false;
+            let matchesPurok = !filterPurok || household.purok === filterPurok;
+            let matchesDamage = !filterDamage || household.damageStatus === filterDamage;
+            return matchesPurok && matchesDamage;
+        });
+        // === HEADER ===
+        doc.setFillColor(15, 81, 50);
+        doc.rect(0, 0, 210, 45, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PDRIMS', 105, 18, { align: 'center' });
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Post-Disaster Recovery Information Management System', 105, 26, { align: 'center' });
+        
+        doc.setFontSize(10);
+        const now = new Date();
+        const timestamp = now.toLocaleString('en-PH', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        doc.text(`Generated: ${timestamp}`, 105, 35, { align: 'center' });
+        // === BARANGAY INFORMATION ===
+        let yPos = 55;
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Barangay Recovery Report', 14, yPos);
+        
+        yPos += 8;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Barangay: ___________________________', 14, yPos);
+        doc.text('Municipality/City: ___________________________', 110, yPos);
+        
+        yPos += 6;
+        doc.text('Province: ___________________________', 14, yPos);
+        doc.text('Disaster Event: Typhoon Rolly (2025)', 110, yPos);
+        // === APPLIED FILTERS ===
+        yPos += 10;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Report Filters:', 14, yPos);
+        
+        yPos += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        const purokText = filterPurok ? filterPurok : 'All Puroks/Sitios';
+        const damageText = filterDamage ? `${filterDamage}% Damage` : 'All Damage Levels';
+        doc.text(`• Purok/Sitio: ${purokText}`, 14, yPos);
+        doc.text(`• Damage Status: ${damageText}`, 110, yPos);
+        // === KEY METRICS SUMMARY ===
+        yPos += 12;
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Key Metrics Summary', 14, yPos);
+        const totalProfiled = filteredHouseholds.length;
+        const totallyDestroyed = filteredHouseholds.filter(h => h.damageStatus === '100').length;
+        const highPriority = filteredHouseholds.filter(h => parseInt(h.damageStatus) >= 75).length;
+        const totalAidDistributed = filteredAidRecords.length;
+        
+        let recoveryPercent = 0;
+        if (totalProfiled > 0) {
+            recoveryPercent = Math.round((totalAidDistributed / totalProfiled) * 100);
+        }
+        const metrics = [
+            ['Total Households Profiled', totalProfiled || 'No data'],
+            ['Totally Destroyed Homes (100%)', totallyDestroyed || 'No data'],
+            ['High Priority Cases (≥75%)', highPriority || 'No data'],
+            ['Total Aid Records', totalAidDistributed || 'No data'],
+            ['Aid Distribution Rate', totalProfiled > 0 ? `${recoveryPercent}%` : 'No data']
+        ];
+        doc.autoTable({
+            startY: yPos + 5,
+            head: [['Metric', 'Value']],
+            body: metrics,
+            theme: 'striped',
+            headStyles: { 
+                fillColor: [25, 135, 84],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            styles: { fontSize: 10 },
+            columnStyles: {
+                0: { cellWidth: 130 },
+                1: { cellWidth: 56, halign: 'center', fontStyle: 'bold' }
+            },
+            margin: { left: 14, right: 14 }
+        });
+        // === DETAILED HOUSEHOLD LIST ===
+        yPos = doc.lastAutoTable.finalY + 15;
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Detailed Household List', 14, yPos);
+        const householdTableData = filteredHouseholds.length > 0 
+            ? filteredHouseholds.map((h, i) => [
+                i + 1,
+                h.headName || 'N/A',
+                h.purok || 'N/A',
+                h.damageStatus ? `${h.damageStatus}%` : 'N/A',
+                h.familyMembers ? h.familyMembers.length : 1,
+                h.contact || 'N/A'
+            ])
+            : [['No data available', '', '', '', '', '']];
+        doc.autoTable({
+            startY: yPos + 5,
+            head: [['#', 'Head of Household', 'Purok', 'Damage', 'Members', 'Contact']],
+            body: householdTableData,
+            theme: 'grid',
+            headStyles: { 
+                fillColor: [15, 81, 50],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 9
+            },
+            styles: { fontSize: 8, cellPadding: 3 },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' },
+                1: { cellWidth: 50 },
+                2: { cellWidth: 25 },
+                3: { cellWidth: 20, halign: 'center' },
+                4: { cellWidth: 20, halign: 'center' },
+                5: { cellWidth: 35 }
+            },
+            margin: { left: 14, right: 14 }
+        });
+        // === AID DISTRIBUTION RECORDS ===
+        if (doc.lastAutoTable.finalY > 240) {
+            doc.addPage();
+            yPos = 20;
+        } else {
+            yPos = doc.lastAutoTable.finalY + 15;
+        }
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Aid Distribution Records', 14, yPos);
+        const aidTableData = filteredAidRecords.length > 0
+            ? filteredAidRecords.map((record, i) => {
+                const household = households.find(h => h.id === record.aidRecipientId);
+                return [
+                    i + 1,
+                    record.recipientName || household?.headName || 'N/A',
+                    record.aidType || 'N/A',
+                    record.quantity || 'N/A',
+                    record.dateDistributed || 'N/A',
+                    record.distributedBy || 'N/A'
+                ];
+            })
+            : [['No data available', '', '', '', '', '']];
+        doc.autoTable({
+            startY: yPos + 5,
+            head: [['#', 'Recipient', 'Aid Type', 'Quantity', 'Date', 'Distributed By']],
+            body: aidTableData,
+            theme: 'grid',
+            headStyles: { 
+                fillColor: [15, 81, 50],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 9
+            },
+            styles: { fontSize: 8, cellPadding: 3 },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' },
+                1: { cellWidth: 45 },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 25 },
+                4: { cellWidth: 25 },
+                5: { cellWidth: 40 }
+            },
+            margin: { left: 14, right: 14 }
+        });
+        // === SIGNATURE SECTION ===
+        if (doc.lastAutoTable.finalY > 220) {
+            doc.addPage();
+            yPos = 20;
+        } else {
+            yPos = doc.lastAutoTable.finalY + 20;
+        }
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Official Signatures', 14, yPos);
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        doc.text('Prepared by:', 14, yPos);
+        yPos += 15;
+        doc.text('_____________________________', 14, yPos);
+        yPos += 5;
+        doc.setFontSize(9);
+        doc.text('Name and Signature', 14, yPos);
+        doc.text('Date: _______________', 14, yPos + 5);
+        yPos -= 20;
+        doc.setFontSize(10);
+        doc.text('Verified by:', 110, yPos);
+        yPos += 15;
+        doc.text('_____________________________', 110, yPos);
+        yPos += 5;
+        doc.setFontSize(9);
+        doc.text('Barangay Captain', 110, yPos);
+        doc.text('Date: _______________', 110, yPos + 5);
+        // === FOOTER ===
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(128, 128, 128);
+            doc.text(`Page ${i} of ${pageCount}`, 105, 287, { align: 'center' });
+            doc.text('PDRIMS - Confidential Document', 14, 287);
+        }
+        const fileTimestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+        const filename = `Barangay_Recovery_Report_${fileTimestamp}.pdf`;
+        doc.save(filename);
+        const outputEl = document.getElementById('reportOutput');
+        if (outputEl) {
+            outputEl.textContent = `PDF report generated successfully! File: ${filename}`;
+            outputEl.classList.remove('hidden', 'bg-red-100', 'text-red-800');
+            outputEl.classList.add('bg-green-100', 'text-green-800');
+            setTimeout(() => outputEl.classList.add('hidden'), 7000);
+        }
+    };
+    // === CSV EXPORT GENERATION ===
+    const generateCSVReport = () => {
+        const filterPurok = document.getElementById('reportPurokFilter')?.value || '';
+        const filterDamage = document.getElementById('reportDamageFilter')?.value || '';
+        let filteredHouseholds = households.filter(h => {
+            let matchesPurok = !filterPurok || h.purok === filterPurok;
+            let matchesDamage = !filterDamage || h.damageStatus === filterDamage;
+            return matchesPurok && matchesDamage;
+        });
+        let filteredAidRecords = aidRecords.filter(record => {
+            const household = households.find(h => h.id === record.aidRecipientId);
+            if (!household) return false;
+            let matchesPurok = !filterPurok || household.purok === filterPurok;
+            let matchesDamage = !filterDamage || household.damageStatus === filterDamage;
+            return matchesPurok && matchesDamage;
+        });
+        let csvContent = '';
+        csvContent += 'PDRIMS - Post-Disaster Recovery Information Management System\n';
+        csvContent += `Report Generated: ${new Date().toLocaleString('en-PH')}\n`;
+        csvContent += `Applied Filters: Purok=${filterPurok || 'All'}, Damage=${filterDamage || 'All'}%\n`;
+        csvContent += '\n';
+        csvContent += '=== KEY METRICS SUMMARY ===\n';
+        const totalProfiled = filteredHouseholds.length;
+        const totallyDestroyed = filteredHouseholds.filter(h => h.damageStatus === '100').length;
+        const highPriority = filteredHouseholds.filter(h => parseInt(h.damageStatus) >= 75).length;
+        const totalAidDistributed = filteredAidRecords.length;
+        const recoveryPercent = totalProfiled > 0 ? Math.round((totalAidDistributed / totalProfiled) * 100) : 0;
+        csvContent += `Total Households Profiled,${totalProfiled || 'No data'}\n`;
+        csvContent += `Totally Destroyed Homes (100%),${totallyDestroyed || 'No data'}\n`;
+        csvContent += `High Priority Cases (≥75%),${highPriority || 'No data'}\n`;
+        csvContent += `Total Aid Records,${totalAidDistributed || 'No data'}\n`;
+        csvContent += `Aid Distribution Rate,${totalProfiled > 0 ? recoveryPercent + '%' : 'No data'}\n`;
+        csvContent += '\n\n';
+        csvContent += '=== HOUSEHOLD PROFILES ===\n';
+        csvContent += '#,Head of Household,Purok/Sitio,Contact Number,Damage Status (%),Initial Needs,Family Members Count,Family Members Details,Timestamp,Profiled By\n';
+        
+        if (filteredHouseholds.length > 0) {
+            filteredHouseholds.forEach((h, index) => {
+                const escapeCsv = (str) => {
+                    if (!str) return '';
+                    str = String(str);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                };
+                let familyMembersDetails = '';
+                if (h.familyMembers && h.familyMembers.length > 0) {
+                    familyMembersDetails = h.familyMembers.map(m => 
+                        `${m.name || 'N/A'} (Age: ${m.age || 'N/A'}, ${m.relationship || 'N/A'}, ${m.livelihood || 'N/A'})`
+                    ).join('; ');
+                }
+                csvContent += `${index + 1},`;
+                csvContent += `${escapeCsv(h.headName || 'N/A')},`;
+                csvContent += `${escapeCsv(h.purok || 'N/A')},`;
+                csvContent += `${escapeCsv(h.contact || 'N/A')},`;
+                csvContent += `${h.damageStatus || 'N/A'},`;
+                csvContent += `${escapeCsv(h.initialNeeds || 'N/A')},`;
+                csvContent += `${h.familyMembers ? h.familyMembers.length : 0},`;
+                csvContent += `${escapeCsv(familyMembersDetails || 'N/A')},`;
+                csvContent += `${escapeCsv(h.timestamp || 'N/A')},`;
+                csvContent += `${escapeCsv(h.profiledBy || 'N/A')}\n`;
+            });
+        } else {
+            csvContent += 'No data available\n';
+        }
+        csvContent += '\n\n';
+        csvContent += '=== AID DISTRIBUTION RECORDS ===\n';
+        csvContent += '#,Recipient Household ID,Recipient Name,Aid Type,Quantity/Value,Date Distributed,Distribution Notes,Distributed By,Timestamp,Recorded By\n';
+        
+        if (filteredAidRecords.length > 0) {
+            filteredAidRecords.forEach((record, index) => {
+                const escapeCsv = (str) => {
+                    if (!str) return '';
+                    str = String(str);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                };
+                const household = households.find(h => h.id === record.aidRecipientId);
+                
+                csvContent += `${index + 1},`;
+                csvContent += `${escapeCsv(record.aidRecipientId || 'N/A')},`;
+                csvContent += `${escapeCsv(record.recipientName || household?.headName || 'N/A')},`;
+                csvContent += `${escapeCsv(record.aidType || 'N/A')},`;
+                csvContent += `${escapeCsv(record.quantity || 'N/A')},`;
+                csvContent += `${escapeCsv(record.dateDistributed || 'N/A')},`;
+                csvContent += `${escapeCsv(record.distributionNotes || 'N/A')},`;
+                csvContent += `${escapeCsv(record.distributedBy || 'N/A')},`;
+                csvContent += `${escapeCsv(record.timestamp || 'N/A')},`;
+                csvContent += `${escapeCsv(record.recordedBy || 'N/A')}\n`;
+            });
+        } else {
+            csvContent += 'No data available\n';
+        }
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const now = new Date();
+        const fileTimestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+        link.download = `Barangay_Recovery_Data_${fileTimestamp}.csv`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        const outputEl = document.getElementById('reportOutput');
+        if (outputEl) {
+            outputEl.textContent = `CSV file exported successfully! File: Barangay_Recovery_Data_${fileTimestamp}.csv`;
+            outputEl.classList.remove('hidden', 'bg-red-100', 'text-red-800');
+            outputEl.classList.add('bg-green-100', 'text-green-800');
+            setTimeout(() => outputEl.classList.add('hidden'), 7000);
+        }
+    };
+    // === MAIN REPORT FUNCTION ===
+    const generateReport = (format) => {
+        if (format === 'PDF') {
+            generatePDFReport();
+        } else if (format === 'CSV') {
+            generateCSVReport();
+        }
+    };
+
             const filterPurok = document.getElementById('reportPurokFilter').value;
             const filterDamage = document.getElementById('reportDamageFilter').value;
             
@@ -392,14 +876,41 @@
             }
             
             setTimeout(() => { resultElement.classList.add('hidden'); }, 7000);
+        
+
+        // LocalStorage Helpers
+        const saveToLocalStorage = (key, data) => {
+            const existing = JSON.parse(localStorage.getItem(key) || '[]');
+            // Add ID if missing
+            if (!data.id) data.id = crypto.randomUUID();
+            existing.push(data);
+            localStorage.setItem(key, JSON.stringify(existing));
+        };
+
+        const loadFromLocalStorage = () => {
+            const localHouseholds = JSON.parse(localStorage.getItem('households') || '[]');
+            const localAid = JSON.parse(localStorage.getItem('aidRecords') || '[]');
+            
+            // Merge with in-memory if needed, but for now just set them
+            // In a real app we might want to merge cloud + local
+            if (localHouseholds.length > 0) {
+                households = localHouseholds;
+                renderHouseholdList(households);
+                populateHouseholdDropdown(households);
+            }
+            if (localAid.length > 0) {
+                aidRecords = localAid;
+                renderAidRecords(aidRecords);
+            }
+            updateDashboardMetrics();
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
             const defaultNav = document.querySelector('[data-target="Dashboard"]');
             if (defaultNav) {
-                window.switchContent('Dashboard', defaultNav);
+                switchContent('Dashboard', defaultNav);
             }
-            window.addMember();
+            addMember();
 
             const navLinks = document.querySelectorAll('.nav-link');
             navLinks.forEach(link => {
@@ -407,7 +918,7 @@
                 if (targetId) {
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
-                        window.switchContent(targetId, link);
+                        switchContent(targetId, link);
                     });
                 }
             });
@@ -456,6 +967,7 @@
                                  updateDashboardMetrics(); 
                              }, (error) => {
                                  console.error("Error fetching household list:", error);
+                                 loadFromLocalStorage(); // Fallback on error
                              });
                              
                              const aidCollectionPath = `artifacts/${appId}/users/${userId}/aid_distribution`;
@@ -470,6 +982,7 @@
                                  updateDashboardMetrics(); 
                              }, (error) => {
                                  console.error("Error fetching aid records:", error);
+                                 loadFromLocalStorage(); // Fallback on error
                              });
                         }
                     });
@@ -477,14 +990,25 @@
 
                 } catch (error) {
                     console.error("Firebase initialization or authentication failed:", error);
+                    loadFromLocalStorage(); // Fallback
                 }
             } else {
                 const userIdElement = document.getElementById('userIdDisplay');
                 if (userIdElement) {
-                    userIdElement.textContent = `User ID: default-user-id`;
+                    userIdElement.textContent = `User ID: default-user-id (Offline)`;
                 }
+                loadFromLocalStorage(); // Load local data immediately
             }
         });
+
+        // Attach functions to window for global access
+        window.switchContent = switchContent;
+        window.addMember = addMember;
+        window.removeMember = removeMember;
+        window.saveProfile = saveProfile;
+        window.saveAidRecord = saveAidRecord;
+        window.generateReport = generateReport;
+        window.generatePDFReport = generatePDFReport;
 
     </script>
 </head>
@@ -686,6 +1210,115 @@
                                     <label for="aidType" class="block text-sm font-medium text-gray-700 required">Type of Aid</label>
                                     <select id="aidType" name="aidType" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
                                         <option value="">Select Aid Type</option>
+                                        <option value="Food Pack">Food Pack</option>
+                                        <option value="Shelter Kit">Shelter Kit (Tarpaulin/Lumber)</option>
+                                        <option value="Cash Aid">Cash Aid</option>
+                                        <option value="Hygiene Kit">Hygiene Kit</option>
+                                        <option value="Medicine">Medicine</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="quantity" class="block text-sm font-medium text-gray-700">Quantity / Value</label>
+                                    <input type="text" id="quantity" name="quantity" placeholder="e.g., 1 box or Php 5,000" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+                                
+                                <div>
+                                    <label for="dateDistributed" class="block text-sm font-medium text-gray-700 required">Date Distributed</label>
+                                    <input type="date" id="dateDistributed" name="dateDistributed" required class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+
+                                <div class="md:col-span-3">
+                                    <label for="distributionNotes" class="block text-sm font-medium text-gray-700">Notes / Remarks</label>
+                                    <input type="text" id="distributionNotes" name="distributionNotes" placeholder="e.g., Given to spouse/received 2nd tranche" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+
+                                <div>
+                                    <label for="distributedBy" class="block text-sm font-medium text-gray-700">Distributed By (Optional)</label>
+                                    <input type="text" id="distributedBy" name="distributedBy" placeholder="e.g., MSWD or LGU" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                </div>
+
+                            </div>
+                            <button type="submit" class="w-full bg-orange-600 text-white px-4 py-3 rounded-lg text-lg font-semibold hover:bg-orange-700 transition shadow-lg">
+                                <i data-lucide="hand-heart" class="w-5 h-5 inline-block mr-2"></i> Record Aid Distribution
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-800">Distribution History (Real-Time)</h2>
+                    <div class="bg-white p-0 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient (Head Name)</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aid Type</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aidRecordTableBody" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading aid distribution data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </section>
+
+                <section id="ReportsExports" class="content-section hidden">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">Generate Official Reports</h2>
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                        <p class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Filter Data for Reporting</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div>
+                                <label for="reportPurokFilter" class="block text-sm font-medium text-gray-700">Filter by Purok/Sitio</label>
+                                <select id="reportPurokFilter" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    <option value="">All Purok/Sitio</option>
+                                    <option value="Purok 1">Purok 1</option>
+                                    <option value="Purok 2">Purok 2</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="reportDamageFilter" class="block text-sm font-medium text-gray-700">Filter by Damage Status</label>
+                                <select id="reportDamageFilter" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    <option value="">All Damage Status</option>
+                                    <option value="0">0% - Unaffected</option>
+                                    <option value="25">25% - Minor Damage</option>
+                                    <option value="50">50% - Moderate Damage</option>
+                                    <option value="75">75% - Major Damage</option>
+                                    <option value="100">100% - Total Loss</option>
+                                </select>
+                            </div>
+                            
+                            <div></div> 
+                        </div>
+
+                        <p class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Generate Report Formats</p>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button onclick="generateReport('CSV')" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-md">
+                                <i data-lucide="file-text" class="w-5 h-5 inline-block mr-2"></i> Export Raw Data (CSV)
+                            </button>
+                            <button onclick="generateReport('PDF')" class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-md">
+                                <i data-lucide="download" class="w-5 h-5 inline-block mr-2"></i> Generate Summary (PDF)
+                            </button>
+                        </div>
+                        
+                        <div id="reportOutput" class="hidden mt-6 p-4 rounded-lg text-sm font-medium transition"></div>
+
+                    </div>
+                </section>
+
+                <script>
+                    lucide.createIcons();
+                </script>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
                                         <option value="Food Pack">Food Pack</option>
                                         <option value="Shelter Kit">Shelter Kit (Tarpaulin/Lumber)</option>
                                         <option value="Cash Aid">Cash Aid</option>
