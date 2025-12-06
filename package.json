@@ -7,7 +7,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Rocket21-sudo/Post-Disaster-Recovery-IMS.git"
+    "url": "git+https://github.com/StarLabsDynamics/Post-Disaster-Recovery_IMS.git"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +27,7 @@
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "post-disaster-recovery-ims": "file:",
-    "sqlite3": "^5.1.7"
+    "mysql2": "^3.15.3",
+    "post-disaster-recovery-ims": "file:"
   }
 }
