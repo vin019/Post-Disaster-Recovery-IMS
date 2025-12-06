@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDRIMS - Barangay Recovery System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const userStr = sessionStorage.getItem('currentUser');
+            if (!userStr) {
+                window.location.href = 'landing.html';
+                return;
+            }
+            try {
+                const user = JSON.parse(userStr);
+                if (user.role !== 'official' || !user.verified) {
+                    alert('Unauthorized access. Please login.');
+                    window.location.href = 'landing.html';
+                }
+            } catch (e) {
+                sessionStorage.removeItem('currentUser');
+                window.location.href = 'landing.html';
+            }
+        })();
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#004D40',
+                        'primary-deep': '#00382E',
+                        'primary-light': '#00796B',
+                        'aid-color': '#A27500',
+                        'aid-color-dark': '#886000',
+                        'report-color': '#800000',
+                        'report-color-dark': '#6a0000'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F6FFF7;
+        }
+
+        .w-70 {
+             width: 280px;
+        }
+        
+        /* Custom CSS for the right-side drawer */
+        .drawer {
+            transition: transform 0.3s ease-out;
+            transform: translateX(100%);
+        }
+        .drawer-open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #E0E7FF;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(0, 121, 107, 0.5);
+        }
+        .nav-link.active {
+            background-color: #00796B;
+            font-weight: 600;
+            color: white;
+        }
+        .nav-link svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+        .stat-card {
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+            position: relative;
+            min-height: 120px;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+        }
+        .required::after {
+            content: ' *';
+            color: #ef4444;
+        }
+    </style>
+   
+    <script type="module">
+       
+        let isSidebarOpen = false;
+
+        let householdsData = [];
+        let aidRecordsData = [];
+        const OFFICIAL_NAME = JSON.parse(sessionStorage.getItem('currentUser') || '{}').name || 'Official';
+
+        // --- FETCH DATA ---
+        async function fetchHouseholds() {
+            try {
+                const res = await fetch('http://localhost:3000/api/households');
+                householdsData = await res.json();
+                filterAndSearchHouseholdList();
+                populateHouseholdDropdown();
+                updateDashboardMetrics();
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchAidRecords() {
+            try {
+                const res = await fetch('http://localhost:3000/api/aid-records');
+                aidRecordsData = await res.json();
+                filterAndSearchAidList();
+            } catch(e) { console.error(e); }
+        }
+
+        const updateDashboardMetrics = () => {
+            document.getElementById('stat-profiled-count').textContent = householdsData.length;
+            const destroyed = householdsData.filter(h => h.damage_status === '100').length;
+            document.getElementById('stat-destroyed-count').textContent = destroyed;
+            const priority = householdsData.filter(h => ['100', '75'].includes(h.damage_status)).length;
+            document.getElementById('stat-priority-count').textContent = priority;
+            document.getElementById('stat-recovery-percent').textContent = `15%`; 
+        };
+       
+        // --- UTILITY FUNCTION ---
+        const setText = (id, content) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = content;
+        };
+
+        // --- HOUSEHOLD DRAWER FUNCTIONS ---
+
+        window.closeDetailsDrawer = () => {
+            document.getElementById('detailsDrawer').classList.remove('drawer-open');
+        };
+
+        window.openDetailsDrawer = (householdId) => {
+            const household = householdsData.find(h => h.id == householdId);
+            if (!household) return alert('Data not found for ID: ' + householdId);
+
+            const damageStatusMap = {
+                '0': '0% - Unaffected/No Damage', '25': '25% - Minor Damage (Superficial)', 
+                '50': '50% - Moderate Damage (Half Loss)', '75': '75% - Major Damage (Structural Loss)', 
+                '100': '100% - Total Loss/Destroyed'
+            };
+            const damageLabel = damageStatusMap[household.damage_status] || 'N/A';
+           
+            setText('drawerHeadName', household.head_name || 'Unnamed Head');
+            setText('drawerAge', household.head_age || 'N/A');
+            setText('drawerContact', household.contact_number || 'N/A');
+            setText('drawerId', `ID: ${household.id}`);
+            setText('drawerPurok', household.purok || 'N/A');
+            setText('drawerDamageStatus', damageLabel);
+            setText('drawerNeeds', household.initial_needs || 'None specified');
+            
+            const memberList = household.familyMembers || [];
+            setText('drawerMemberCount', memberList.length);
+            const memberHTML = memberList.length > 0
+                ? memberList.map((m, i) => `<li class="text-gray-700">Member ${i + 1}</li>`).join('')
+                : '<li class="text-gray-500">Head is only registered member.</li>';
+            document.getElementById('drawerMemberList').innerHTML = memberHTML;
+
+            // --- Aid Distribution History Logic ---
+            const aidRecords = aidRecordsData.filter(record => record.recipient_id == householdId);
+            setText('drawerAidCount', aidRecords.length);
+
+            const aidList = document.getElementById('drawerAidList');
+            if (aidRecords.length > 0) {
+                const aidHTML = aidRecords.map(record => `
+                    <li class="p-2 bg-gray-50 rounded-md">
+                        <span class="font-medium text-gray-800">${record.aid_type}</span>: ${record.quantity}
+                        <span class="text-xs text-gray-500 block">Date: ${record.date_distributed}</span>
+                    </li>
+                `).join('');
+                aidList.innerHTML = aidHTML;
+            } else {
+                aidList.innerHTML = '<li class="text-gray-500 p-2">No recorded aid distribution yet.</li>';
+            }
+
+            document.getElementById('drawerEditButton').setAttribute('onclick', `startEditProfile('${household.id}')`);
+            document.getElementById('detailsDrawer').classList.add('drawer-open');
+            
+            closeAidDetailsDrawer();
+            lucide.createIcons();
+        };
+
+        window.startEditProfile = (householdId) => {
+            closeDetailsDrawer();
+            
+            const profileLink = document.querySelector('[data-target="HouseholdProfiles"]');
+            if (profileLink) {
+                 profileLink.click();
+            } else {
+                 window.switchContent('HouseholdProfiles', document.getElementById('mainTitle'));
+            }
+
+            const profileForm = document.getElementById('householdProfileForm');
+            if (profileForm) {
+                profileForm.scrollIntoView(); 
+            }
+
+            const household = householdsData.find(h => h.id == householdId);
+            if (!household) return alert('Household not found for editing.');
+
+            const messageElement = document.getElementById('saveMessage');
+            messageElement.className = 'mt-4 p-3 rounded-md text-sm font-medium transition bg-yellow-100 text-yellow-800';
+            messageElement.textContent = `Pre-filling form for EDITING Household ID: ${householdId} (${household.head_name}).`;
+            messageElement.classList.remove('hidden');
+
+            setTimeout(() => {
+                 messageElement.classList.add('hidden');
+            }, 8000);
+            
+            // Set Edit Mode
+            profileForm.dataset.editId = householdId;
+
+            // Pre-fill Head Details
+            const [surname, rest] = (household.head_name || '').split(', ');
+            const parts = (rest || '').split(' ');
+            const middle = parts.length > 1 && parts[parts.length-1].length <= 2 ? parts.pop() : '';
+            const firstname = parts.join(' ');
+
+            document.getElementById('headSurname').value = surname || '';
+            document.getElementById('headFirstname').value = firstname || '';
+            document.getElementById('headMiddleInitial').value = middle || '';
+            document.getElementById('headAge').value = household.head_age || '';
+            document.getElementById('contact').value = household.contact_number || '';
+            document.getElementById('purok').value = household.purok || '';
+            document.getElementById('damageStatus').value = household.damage_status || '';
+            document.getElementById('initialNeeds').value = household.initial_needs || '';
+            
+            // Note: headGender, headCondition, headLivelihood might not be in DB columns? 
+            // The table schema has: id, head_name, purok, damage_status, head_age, contact_number, family_members, initial_needs
+            // Missing: gender, livelihood, condition for HEAD.
+            // I will skip them or infer if possible, or left blank if not stored.
+            
+            document.querySelectorAll('.member-row').forEach(row => row.remove());
+            
+            const members = household.familyMembers || [];
+            members.forEach(m => {
+                 window.addMember();
+                 const rows = document.querySelectorAll('.member-row');
+                 const lastRow = rows[rows.length - 1];
+                 
+                 if(lastRow) {
+                     lastRow.querySelector('.member-surname').value = m.surname || '';
+                     lastRow.querySelector('.member-firstname').value = m.firstName || '';
+                     lastRow.querySelector('.member-middle').value = m.middleInitial || '';
+                     lastRow.querySelector('.member-age').value = m.age || '';
+                     lastRow.querySelector('.member-gender').value = m.gender || '';
+                     lastRow.querySelector('.member-relation').value = m.relationship || '';
+                     lastRow.querySelector('.member-livelihood').value = m.livelihood || '';
+                     lastRow.querySelector('.member-condition').value = m.condition || '';
+                     lastRow.querySelector('.member-residence').value = m.residence || '';
+                 }
+            });
+
+            filterAndSearchHouseholdList(); 
+        };
+        
+        // --- HOUSEHOLD MASTERLIST FILTER AND SEARCH LOGIC ---
+		
+        window.filterAndSearchHouseholdList = () => {
+            const searchText = (document.getElementById('masterlistSearch')?.value || '').toLowerCase();
+            const purokFilter = document.getElementById('masterlistPurokFilter')?.value || '';
+            const damageFilter = document.getElementById('masterlistDamageFilter')?.value || '';
+
+            const filteredHouseholds = householdsData.filter(household => {
+                const matchesSearch = !searchText || 
+                    (household.head_name && household.head_name.toLowerCase().includes(searchText)) ||
+                    (household.id && household.id.toString().toLowerCase().includes(searchText));
+                const matchesPurok = !purokFilter || household.purok === purokFilter;
+                const matchesDamage = !damageFilter || household.damage_status === damageFilter;
+
+                return matchesSearch && matchesPurok && matchesDamage;
+            });
+
+            renderHouseholdList(filteredHouseholds);
+        };
+
+        // --- HOUSEHOLD MASTERLIST RENDER ---
+		
+        window.renderHouseholdList = (data) => {
+            const tableBody = document.getElementById('householdTableBody');
+            if (!tableBody) return;
+           
+            const householdsToRender = data; 
+
+            if (householdsToRender.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No matching household profiles found.</td></tr>`;
+                return;
+            }
+
+            const rowsHTML = householdsToRender.map((household, index) => {
+                const damageStatusMap = {
+                    '0': '0% - Unaffected/No Damage', '25': '25% - Minor Damage (Superficial)',
+                    '50': '50% - Moderate Damage (Half Loss)', '75': '75% - Major Damage (Structural Loss)',
+                    '100': '100% - Total Loss/Destroyed'
+                };
+                const damageLabel = damageStatusMap[household.damage_status] || household.damage_status || 'N/A';
+
+                return `
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-4 text-sm font-semibold text-gray-700">${index + 1}</td>
+                        <td class="p-4 text-sm">${household.head_name || 'N/A'}</td>
+                        <td class="p-4 text-sm">${household.purok || 'N/A'}</td>
+                        <td class="p-4 text-sm">${damageLabel}</td>
+                        <td class="p-4 text-sm">${(household.familyMembers || []).length}</td>
+                        <td class="p-4 text-sm space-x-2 whitespace-nowrap">
+                            <button class="text-primary-light hover:text-primary-dark transition" onclick="openDetailsDrawer('${household.id}')">View</button>
+                            <button class="text-orange-600 hover:text-orange-800 transition font-medium" onclick="startEditProfile('${household.id}')">Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            tableBody.innerHTML = rowsHTML;
+        };
+
+        // --- AID DISTRIBUTION LIST FUNCTIONS ---
+
+        window.closeAidDetailsDrawer = () => {
+            document.getElementById('aidDetailsDrawer').classList.remove('drawer-open');
+        };
+
+        window.openAidDetailsDrawer = (aidId) => {
+            const aidRecord = aidRecordsData.find(r => r.id == aidId);
+            if (!aidRecord) return alert('Aid Record not found for ID: ' + aidId);
+
+            const household = householdsData.find(h => h.id == aidRecord.recipient_id);
+            const headName = household ? household.head_name : 'Household Not Found';
+            const purok = household ? household.purok : 'N/A';
+
+            setText('aidDrawerRecipient', headName);
+            setText('aidDrawerId', aidRecord.id);
+            setText('aidDrawerHouseholdId', aidRecord.recipient_id);
+            setText('aidDrawerPurok', purok);
+            setText('aidDrawerType', aidRecord.aid_type);
+            setText('aidDrawerQuantity', aidRecord.quantity || '1');
+            setText('aidDrawerDate', aidRecord.date_distributed);
+            setText('aidDrawerBy', aidRecord.distributed_by || 'N/A');
+            setText('aidDrawerNotes', aidRecord.notes || 'None specified.');
+
+            document.getElementById('aidDrawerEditButton').setAttribute('onclick', `startEditAidRecord('${aidRecord.id}')`);
+            
+            document.getElementById('aidDetailsDrawer').classList.add('drawer-open');
+            // Ensure Household Drawer is closed if open
+            closeDetailsDrawer();
+            lucide.createIcons();
+        };
+
+        window.startEditAidRecord = (aidId) => {
+            closeAidDetailsDrawer();
+            
+            const aidLink = document.querySelector('[data-target="AidDistributionRecords"]');
+            if (aidLink) {
+                 aidLink.click();
+            } else {
+                 window.switchContent('AidDistributionRecords', document.getElementById('mainTitle'));
+            }
+
+            const aidForm = document.getElementById('aidDistributionForm');
+            if (aidForm) {
+                aidForm.scrollIntoView(); 
+            }
+
+            const aidRecord = aidRecordsData.find(r => r.id == aidId);
+            if (!aidRecord) return alert('Aid record not found for editing.');
+
+            const messageElement = document.getElementById('aidSaveMessage');
+            messageElement.className = 'mt-4 p-3 rounded-md text-sm font-medium transition bg-yellow-100 text-yellow-800';
+            messageElement.textContent = `Pre-filling form for EDITING Aid Record ID: ${aidId}.`;
+
+            // Pre-fill form (only single select is supported for edit pre-fill)
+            document.getElementById('multiSelectToggle').checked = false;
+            window.toggleMultiSelect(false);
+            document.getElementById('aidRecipientId').value = aidRecord.recipient_id;
+            document.getElementById('aidType').value = aidRecord.aid_type;
+            document.getElementById('quantity').value = aidRecord.quantity;
+            document.getElementById('dateDistributed').value = aidRecord.date_distributed;
+            document.getElementById('distributedBy').value = aidRecord.distributed_by || '';
+            document.getElementById('distributionNotes').value = aidRecord.notes || '';
+
+
+            setTimeout(() => {
+                 messageElement.classList.add('hidden');
+            }, 8000);
+        };
+        
+        window.filterAndSearchAidList = () => {
+            const searchText = (document.getElementById('aidlistSearch')?.value || '').toLowerCase();
+            const aidTypeFilter = document.getElementById('aidlistAidTypeFilter')?.value || '';
+            const recipientIdFilter = document.getElementById('aidlistRecipientFilter')?.value || '';
+
+            const filteredAidRecords = aidRecordsData.filter(record => {
+                const household = householdsData.find(h => h.id == record.recipient_id) || {};
+                const headName = household.head_name ? household.head_name.toLowerCase() : '';
+
+                // Search Filter 
+                const matchesSearch = !searchText || 
+                    headName.includes(searchText) ||
+                    (record.aid_type && record.aid_type.toLowerCase().includes(searchText)) ||
+                    (record.id && record.id.toString().toLowerCase().includes(searchText));
+
+                // Aid Type Filter
+                const matchesAidType = !aidTypeFilter || record.aid_type === aidTypeFilter;
+
+                // Recipient/Household Filter
+                const matchesRecipient = !recipientIdFilter || record.recipient_id == recipientIdFilter;
+
+                return matchesSearch && matchesAidType && matchesRecipient;
+            });
+
+            renderAidRecords(filteredAidRecords);
+        };
+
+        window.renderAidRecords = (data) => {
+            const tableBody = document.getElementById('aidRecordTableBody');
+            if (!tableBody) return;
+           
+            const recordsToRender = data;
+
+            if (recordsToRender.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No matching aid distribution records found.</td></tr>`;
+                return;
+            }
+
+            const rowsHTML = recordsToRender.map((record, index) => {
+                const household = householdsData.find(h => h.id == record.recipient_id);
+                const headName = household ? household.head_name : 'Household Not Found';
+                const date = record.date_distributed || 'N/A';
+
+                return `
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-4 text-sm font-semibold text-gray-700">${index + 1}</td>
+                        <td class="p-4 text-sm">${headName} (${String(record.recipient_id).substring(0, 8)})</td>
+                        <td class="p-4 text-sm">${record.aid_type || 'N/A'}</td>
+                        <td class="p-4 text-sm">${record.quantity || '1'}</td>
+                        <td class="p-4 text-sm">${date}</td>
+                        <td class="p-4 text-sm space-x-2 whitespace-nowrap">
+                            <button class="text-aid-color hover:text-aid-color-dark transition" onclick="openAidDetailsDrawer('${record.id}')">View</button>
+                            <button class="text-red-600 hover:text-red-800 transition font-medium" onclick="startEditAidRecord('${record.id}')">Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            tableBody.innerHTML = rowsHTML;
+        };
+
+        // --- GENERAL/UTILITY FUNCTIONS ---
+
+        const populateHouseholdDropdown = () => {
+            const singleSelect = document.getElementById('aidRecipientId');
+            const multiSelectDiv = document.getElementById('multiSelectCheckboxes');
+            const aidRecipientFilter = document.getElementById('aidlistRecipientFilter');
+
+            if (!singleSelect || !multiSelectDiv || !aidRecipientFilter) return;
+
+            const householdsToUse = householdsData;
+
+            // Clear and populate single select & filter select
+            singleSelect.innerHTML = '<option value="">Select Single Household Head</option>';
+            aidRecipientFilter.innerHTML = '<option value="">All Recipients</option>';
+           
+            multiSelectDiv.innerHTML = '';
+           
+            if (householdsToUse.length === 0) {
+                multiSelectDiv.innerHTML = '<p class="text-xs text-gray-400 p-2">No households profiled yet.</p>';
+                return;
+            }
+
+            householdsToUse.forEach(h => {
+                const idShort = h.id.toString().substring(0, 8);
+                const name = h.head_name || 'Unnamed Head';
+                const display = `ID: ${idShort} - ${name}`;
+               
+                const option = document.createElement('option');
+                option.value = h.id;
+                option.textContent = display;
+                singleSelect.appendChild(option.cloneNode(true));
+                aidRecipientFilter.appendChild(option.cloneNode(true));
+               
+                const checkboxWrapper = document.createElement('div');
+                checkboxWrapper.className = 'flex items-center space-x-2 py-1 border-b border-gray-100 last:border-b-0';
+                checkboxWrapper.innerHTML = `
+                    <input type="checkbox" id="recipient-${h.id}" name="recipient-${h.id}" value="${h.id}" class="h-4 w-4 text-primary-dark border-gray-300 rounded-md focus:ring-primary-light recipient-checkbox">
+                    <label for="recipient-${h.id}" class="text-sm text-gray-700 cursor-pointer">${display}</label>
+                `;
+                multiSelectDiv.appendChild(checkboxWrapper);
+            });
+        };
+
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+           
+            if (isSidebarOpen) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                overlay.classList.remove('opacity-100', 'pointer-events-auto');
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                overlay.classList.add('opacity-100', 'pointer-events-auto');
+            }
+            isSidebarOpen = !isSidebarOpen;
+        };
+       
+        window.switchContent = (targetId, clickedElement) => {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            const targetSection = document.getElementById(targetId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+               
+                const headerTitle = document.getElementById('mainTitle');
+                if (headerTitle) {
+                     headerTitle.textContent = clickedElement.textContent.trim();
+                }
+            }
+
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            clickedElement.classList.add('active');
+           
+            if (window.innerWidth < 1024 && isSidebarOpen) {
+                window.toggleSidebar();
+            }
+        };
+
+        const MEMBER_ROW_HTML = () => `
+            <div class="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 required">Name of the Household Member</label>
+                    <input type="text" class="member-surname mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="Surname (e.g., Bacsarsa)" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">  </label>
+                    <input type="text" class="member-firstname mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="First Name (e.g., Vin)" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">  </label>
+                    <input type="text" class="member-middle mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="M.I.">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 required">Age</label>
+                    <input type="number" class="member-age mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="e.g., 22" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 required">Gender</label>
+                    <select class="member-gender mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 required">Relationship</label>
+                    <select class="member-relation mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                        <option value="">Select Relationship</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Child">Child</option>
+                        <option value="Parent">Parent/In-Law</option>
+                        <option value="Sibling">Sibling</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 required">Livelihood Status</label>
+                    <select class="member-livelihood mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                        <option value="">Select Status</option>
+                        <option value="Employed">Employed</option>
+                        <option value="Self-Employed">Self-Employed</option>
+                        <option value="Unemployed">Unemployed</option>
+                        <option value="Retired">Retired</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 required">Post-Disaster Condition</label>
+                    <select class="member-condition mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                        <option value="">Select Status</option>
+                        <option value="Alive">Normal/Unaffected</option>
+                        <option value="Injured">Injured</option>
+                        <option value="Missing">Missing</option>
+                        <option value="Deceased">Deceased</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 required">Residence Status</label>
+                    <select class="member-residence mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" required>
+                        <option value="">Select Status</option>
+                        <option value="Resident">Permanent Resident</option>
+                        <option value="Transferred">Transferred to Evacuation Center</option>
+                        <option value="Outside">Temporarily Outside Barangay</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-span-12 flex justify-end pt-2">
+                <button type="button" onclick="removeMember(this)" class="text-sm font-semibold text-red-500 hover:text-red-700 flex items-center transition">
+                    <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Remove Member
+                </button>
+            </div>
+        `;
+
+        window.addMember = () => {
+            const container = document.getElementById('familyMembersContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'grid grid-cols-1 md:grid-cols-12 gap-4 border-t border-gray-100 pt-3 mt-3 member-row';
+            newRow.innerHTML = MEMBER_ROW_HTML(); // Use the template function
+            container.appendChild(newRow);
+            lucide.createIcons();
+        };
+
+        window.removeMember = (button) => {
+            const row = button.closest('.member-row');
+            if (row) {
+                row.remove();
+            }
+        };
+
+        window.saveProfile = async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const editId = form.dataset.editId;
+           
+            const headSurname = document.getElementById('headSurname').value;
+            const headFirstname = document.getElementById('headFirstname').value;
+            const headMiddle = document.getElementById('headMiddleInitial').value;
+            const headName = `${headSurname}, ${headFirstname} ${headMiddle}`.trim();
+
+            // Gather Members
+            const families = [];
+            document.querySelectorAll('.member-row').forEach(row => {
+                families.push({
+                    surname: row.querySelector('.member-surname').value,
+                    firstName: row.querySelector('.member-firstname').value,
+                    middleInitial: row.querySelector('.member-middle').value,
+                    age: row.querySelector('.member-age').value,
+                    gender: row.querySelector('.member-gender').value,
+                    relationship: row.querySelector('.member-relation').value,
+                    livelihood: row.querySelector('.member-livelihood').value,
+                    condition: row.querySelector('.member-condition').value,
+                    residence: row.querySelector('.member-residence').value
+                });
+            });
+
+            const payload = {
+                head_name: headName,
+                head_age: document.getElementById('headAge').value,
+                contact_number: document.getElementById('contact').value,
+                purok: document.getElementById('purok').value,
+                damage_status: document.getElementById('damageStatus').value,
+                initial_needs: document.getElementById('initialNeeds').value,
+                family_members: families
+            };
+
+            const url = editId ? `http://localhost:3000/api/households/${editId}` : 'http://localhost:3000/api/households';
+            const method = editId ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) throw new Error('Failed to save');
+
+                const messageElement = document.getElementById('saveMessage');
+                messageElement.textContent = editId ? 'Profile updated successfully!' : 'Profile created successfully!';
+                messageElement.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+                messageElement.classList.add('bg-green-100', 'text-green-800');
+
+                form.reset();
+                delete form.dataset.editId; // Clear edit mode
+                document.querySelectorAll('.member-row').forEach(row => row.remove());
+                window.addMember(); // Add one empty row
+                
+                await fetchHouseholds(); // Refresh data
+
+                setTimeout(() => {
+                     messageElement.classList.add('hidden');
+                }, 5000);
+            } catch (err) {
+                alert('Error saving profile: ' + err.message);
+                console.error(err);
+            }
+        };
+       
+        window.toggleMultiSelect = (isMulti) => {
+            const singleContainer = document.getElementById('singleRecipientContainer');
+            const multiContainer = document.getElementById('multiRecipientContainer');
+            const singleSelect = document.getElementById('aidRecipientId');
+           
+            if (isMulti) {
+                singleContainer.classList.add('hidden');
+                multiContainer.classList.remove('hidden');
+                singleSelect.removeAttribute('required');
+            } else {
+                singleContainer.classList.remove('hidden');
+                multiContainer.classList.add('hidden');
+                singleSelect.setAttribute('required', 'required');
+            }
+
+            document.getElementById('aidRecipientId').value = '';
+            document.querySelectorAll('.recipient-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        };
+       
+        window.selectAllRecipients = () => {
+            const checkboxes = document.querySelectorAll('#multiSelectCheckboxes .recipient-checkbox');
+            if (checkboxes.length === 0) return;
+           
+            const checkedCount = Array.from(checkboxes).filter(c => c.checked).length;
+            const shouldSelectAll = checkedCount === 0;
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = shouldSelectAll;
+            });
+        };
+
+        window.generateReport = (format) => {
+            const resultElement = document.getElementById('reportOutput');
+            resultElement.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'text-green-800', 'text-red-800');
+            resultElement.textContent = `Generating ${format} report... (Feature implementation pending)`;
+            resultElement.classList.add('bg-green-100', 'text-green-800');
+            resultElement.classList.remove('hidden');
+            setTimeout(() => { resultElement.classList.add('hidden'); }, 3000);
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+             // Initialize Icons
+             if(window.lucide) lucide.createIcons();
+
+             const userIdDisplay = document.getElementById('userIdDisplay');
+             if(userIdDisplay) {
+                 const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                 userIdDisplay.textContent = `User ID: ${user.username || 'N/A'}`;
+             }
+
+             // Handle Sidebar Navigation
+             const navLinks = document.querySelectorAll('.nav-link');
+             navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    const targetId = link.getAttribute('data-target');
+                    if (targetId) {
+                         window.switchContent(targetId, link);
+                    }
+                });
+             });
+
+             // Initial Data Load
+             await fetchHouseholds();
+             await fetchAidRecords();
+             
+             // Open correct tab if needed or default
+             const defaultNav = document.querySelector('[data-target="Dashboard"]');
+             if (defaultNav) {
+                // Manually set active class
+                defaultNav.classList.add('active');
+                document.getElementById('Dashboard').classList.remove('hidden');
+             }
+
+             // Populate dropdowns initially (empty until fetch)
+             populateHouseholdDropdown();
+        });
+    </script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="lg:hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-30 transition-opacity duration-300 opacity-0 pointer-events-none"></div>
+
+    <div class="flex w-full h-[calc(100vh-2rem)]">
+
+        <aside id="sidebar" class="w-70 bg-gradient-to-b from-primary-dark to-primary-deep flex-shrink-0 h-full overflow-y-auto flex flex-col shadow-xl
+                           
+                            fixed top-0 left-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out
+                           
+                            lg:relative lg:translate-x-0 lg:rounded-lg lg:h-full">
+
+            <div class="p-6 pt-8 pb-4 border-b border-white/20">
+                <h1 class="text-white text-2xl font-extrabold uppercase tracking-wide">PDRIMS</h1>
+                <p class="text-white/70 text-sm mt-1">Barangay Recovery System</p>
+            </div>
+
+            <nav class="flex-grow mt-4 space-y-1">
+                <a href="#" class="nav-link active" data-target="Dashboard">
+                    <i data-lucide="home"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-link" data-target="HouseholdProfiles">
+                    <i data-lucide="users"></i>
+                    Household Profiles
+                </a>
+                <a href="#" class="nav-link" data-target="AidDistributionRecords">
+                    <i data-lucide="hand-heart"></i>
+                    Aid Distribution Records
+                </a>
+                <a href="#" class="nav-link" data-target="ReportsExports">
+                    <i data-lucide="file-text"></i>
+                    Reports & Exports
+                </a>
+            </nav>
+
+            <div class="p-6 text-xs text-white/70 border-t border-white/10">
+                <p id="userIdDisplay">User ID: user-id-001</p>
+                <p class="mt-1 flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-green-400 mr-2"></span>
+                    Barangay Official
+                </p>
+            </div>
+        </aside>
+
+        <div id="detailsDrawer" class="drawer fixed top-4 right-4 w-full md:w-96 h-[calc(100vh-2rem)] bg-white shadow-2xl z-50 overflow-y-auto p-6 flex flex-col rounded-lg rounded-tr-none rounded-br-none">
+            <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-primary-dark">Household Details</h2>
+                <button onclick="closeDetailsDrawer()" class="text-gray-500 hover:text-gray-800 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div id="drawerContent" class="flex-grow pt-4 space-y-4">
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="text-sm font-semibold text-gray-600">Head of Household</p>
+                    <p class="text-lg font-bold text-gray-800" id="drawerHeadName">N/A</p>
+                    <div class="text-sm mt-2 space-y-1">
+                        <p class="text-gray-700"><span class="font-medium">Age:</span> <span id="drawerAge">N/A</span></p>
+                        <p class="text-gray-700"><span class="font-medium">Contact:</span> <span id="drawerContact">N/A</span></p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2" id="drawerId">ID: N/A</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-md shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2 mb-2 flex items-center"><i data-lucide="map-pin" class="w-4 h-4 mr-2 text-primary-light"></i> Location & Damage</h3>
+                    <p class="text-sm"><span class="font-medium">Purok:</span> <span id="drawerPurok">N/A</span></p>
+                    <p class="text-sm"><span class="font-medium">Damage Status:</span> <span id="drawerDamageStatus" class="font-bold text-red-600">N/A</span></p>
+                    <p class="text-sm text-gray-500 mt-2">Initial Needs: <span id="drawerNeeds">N/A</span></p>
+                </div>
+               
+                <div class="bg-white p-4 rounded-md shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2 mb-2 flex items-center"><i data-lucide="users" class="w-4 h-4 mr-2 text-primary-light"></i> Family Members (<span id="drawerMemberCount">0</span>)</h3>
+                    <ul id="drawerMemberList" class="list-disc pl-5 text-sm space-y-1">
+                        <li class="text-gray-500">No members listed.</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-4 rounded-md shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2 mb-2 flex items-center"><i data-lucide="hand-heart" class="w-4 h-4 mr-2 text-aid-color"></i> Aid Distribution History (<span id="drawerAidCount">0</span>)</h3>
+                    <ul id="drawerAidList" class="text-sm space-y-2">
+                        <li class="text-gray-500 p-2">No recorded aid distribution yet.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t pt-4 mt-auto">
+                <button id="drawerEditButton" onclick="startEditProfile('mock-id')" class="w-full bg-primary-light text-white px-4 py-2 rounded-md font-semibold hover:bg-primary-dark transition flex items-center justify-center shadow-lg">
+                    <i data-lucide="edit" class="w-5 h-5 inline-block mr-2"></i> Edit Profile Data
+                </button>
+            </div>
+        </div>
+        
+        <div id="aidDetailsDrawer" class="drawer fixed top-4 right-4 w-full md:w-96 h-[calc(100vh-2rem)] bg-white shadow-2xl z-50 overflow-y-auto p-6 flex flex-col rounded-lg rounded-tr-none rounded-br-none">
+            <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-aid-color">Distribution Record Details</h2>
+                <button onclick="closeAidDetailsDrawer()" class="text-gray-500 hover:text-gray-800 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="flex-grow pt-4 space-y-4">
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="text-sm font-semibold text-gray-600">Recipient Household</p>
+                    <p class="text-lg font-bold text-gray-800" id="aidDrawerRecipient">N/A</p>
+                    <p class="text-xs text-gray-500 mt-1" id="aidDrawerHouseholdId">Household ID: N/A</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-md shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2 mb-2 flex items-center"><i data-lucide="tag" class="w-4 h-4 mr-2 text-aid-color"></i> Aid Information</h3>
+                    <p class="text-sm"><span class="font-medium">Aid Type:</span> <span id="aidDrawerType" class="font-bold text-primary-dark">N/A</span></p>
+                    <p class="text-sm"><span class="font-medium">Quantity/Value:</span> <span id="aidDrawerQuantity" class="text-gray-700">N/A</span></p>
+                    <p class="text-sm"><span class="font-medium">Date Distributed:</span> <span id="aidDrawerDate">N/A</span></p>
+                </div>
+               
+                <div class="bg-white p-4 rounded-md shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2 mb-2 flex items-center"><i data-lucide="building-2" class="w-4 h-4 mr-2 text-aid-color"></i> Source & Location</h3>
+                    <p class="text-sm"><span class="font-medium">Distributed By:</span> <span id="aidDrawerBy">N/A</span></p>
+                    <p class="text-sm"><span class="font-medium">Purok:</span> <span id="aidDrawerPurok">N/A</span></p>
+                    <p class="text-xs text-gray-500 mt-2" id="aidDrawerId">Record ID: N/A</p>
+                </div>
+                
+                <div class="bg-white p-4 rounded-md shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2 mb-2 flex items-center"><i data-lucide="notebook-text" class="w-4 h-4 mr-2 text-aid-color"></i> Notes</h3>
+                    <p class="text-sm italic text-gray-600" id="aidDrawerNotes">None specified.</p>
+                </div>
+
+            </div>
+
+            <div class="border-t pt-4 mt-auto">
+                <button id="aidDrawerEditButton" onclick="startEditAidRecord('aid-id')" class="w-full bg-aid-color text-white px-4 py-2 rounded-md font-semibold hover:bg-aid-color-dark transition flex items-center justify-center shadow-lg">
+                    <i data-lucide="edit" class="w-5 h-5 inline-block mr-2"></i> Edit Distribution Record
+                </button>
+            </div>
+        </div>
+        <div class="flex-grow w-full lg:ml-4 h-full overflow-hidden">
+            <main id="main-content" class="h-full p-8 bg-gradient-to-br from-white to-gray-50 shadow-xl rounded-lg overflow-y-auto">
+           
+                <header class="mb-4 pb-4 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-primary-dark" id="mainTitle">Dashboard</h1>
+                        <p class="text-gray-500 mt-1">Overview and real-time statistics for post-disaster monitoring.</p>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-700 bg-red-100 px-4 py-2 rounded-md">
+                        Post-Disaster Monitored: Sta. Cruz Fire (2025)
+                    </div>
+                </header>
+
+                <section id="Dashboard" class="content-section hidden">
+                   
+                    <div class="bg-gray-50 p-8 rounded-lg border border-gray-200 mb-6 mt-6">
+                        <h2 class="text-xl font-bold text-primary-dark mb-6">Key Metrics Overview</h2>
+                       
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="stat-card bg-gradient-to-br from-white to-gray-50">
+                                <p class="text-sm font-medium text-gray-600">Affected Households Profiled</p>
+                                <p class="text-4xl font-bold mt-2 rotate-1 text-red-600" id="stat-profiled-count">125</p>
+                                <p class="text-xs text-gray-400 mt-1">Total unique records</p>
+                            </div>
+                            <div class="stat-card bg-gradient-to-br from-white to-gray-50">
+                                <p class="text-sm font-medium text-gray-600">Totally Destroyed Homes (100% Loss)</p>
+                                <p class="text-4xl font-bold mt-2 text-yellow-600" id="stat-destroyed-count">15</p>
+                                <p class="text-xs text-gray-400 mt-1">Needs verification</p>
+                            </div>
+                            <div class="stat-card bg-gradient-to-br from-white to-gray-50">
+                                <p class="text-sm font-medium text-gray-600">Average Aid Distribution Rate</p>
+                                <p class="text-4xl font-bold mt-2 text-green-600" id="stat-recovery-percent">15%</p>
+                                <p class="text-xs text-gray-400 mt-1">Based on total aid records vs households</p>
+                            </div>
+                            <div class="stat-card bg-gradient-to-br from-white to-gray-50">
+                                <p class="text-sm font-medium text-gray-600">High Priority Households (>= 75% Damage)</p>
+                                <p class="text-4xl font-bold mt-2 text-orange-600" id="stat-priority-count">28</p>
+                         
+                                <div class="absolute bottom-4 right-4">
+                                    <button class="bg-orange-500 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-600 transition shadow-md whitespace-nowrap">
+                                        View List
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                   
+                    <div class="bg-gray-50 p-8 rounded-lg border border-gray-200 mb-6">
+                        <h2 class="text-xl font-bold text-primary-dark mb-6">Overall Household Recovery Progress Breakdown</h2>
+                        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                           
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                               
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Household Damage Breakdown by Purok</h3>
+                                    <div class="flex items-end h-48 border-l border-b border-gray-300 px-2 space-x-6">
+                                       
+                                        <div class="relative flex flex-col items-center justify-end w-1/4 h-4/5 bg-red-600 hover:bg-red-700 transition duration-150 rounded-t-lg shadow-md">
+                                            <span class="absolute -top-6 text-xs font-medium text-red-600">30</span>
+                                            <span class="text-xs text-white p-1">Purok 1</span>
+                                        </div>
+                                        <div class="relative flex flex-col items-center justify-end w-1/4 h-3/5 bg-yellow-600 hover:bg-yellow-700 transition duration-150 rounded-t-lg shadow-md">
+                                            <span class="absolute -top-6 text-xs font-medium text-yellow-600">22</span>
+                                            <span class="text-xs text-white p-1">Purok 2</span>
+                                        </div>
+                                        <div class="relative flex flex-col items-center justify-end w-1/4 h-2/5 bg-green-600 hover:bg-green-700 transition duration-150 rounded-t-lg shadow-md">
+                                            <span class="absolute -top-6 text-xs font-medium text-green-600">15</span>
+                                            <span class="text-xs text-white p-1">Purok 3</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-400 text-center pt-2">X-Axis: Purok / Y-Axis: Households (Count)</p>
+                                </div>
+                               
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Overall Aid Fulfillment Rate</h3>
+                                    <div class="flex justify-center items-center h-48 relative">
+                                        <div class="w-40 h-40 rounded-full bg-gray-200 relative">
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                <div class="w-32 h-32 rounded-full border-8 border-primary-light flex flex-col items-center justify-center shadow-lg">
+                                                    <p class="text-4xl font-bold text-primary-light">75%</p>
+                                                    <p class="text-xs text-gray-500">Fulfilled</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                   
+                                    <div class="flex justify-center space-x-6 mt-4 text-sm">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-primary-light rounded-full mr-2"></span>
+                                            <span class="text-gray-700">Needs Met (75%)</span>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-gray-200 rounded-full mr-2"></span>
+                                            <span class="text-gray-700">Remaining Need (25%)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                               
+                            </div>
+                            </div>
+                    </div>
+                </section>
+
+                <section id="HouseholdProfiles" class="content-section hidden">
+                   
+                    <div id="saveMessage" class="hidden p-3 rounded-md text-sm mb-4"></div>
+
+                    <form id="householdProfileForm" onsubmit="saveProfile(event)">
+                       
+                        <div class="relative -mb-px z-10">
+                            <div class="inline-block px-6 pt-3 pb-2 bg-gradient-to-r from-primary-dark to-primary-light text-white font-semibold text-xl border border-primary-dark border-b-0 rounded-t-md shadow-lg">
+                                Household Profiling Form
+                            </div>
+                        </div>
+                       
+                        <div class="bg-gray-50 p-8 rounded-b-lg rounded-tr-lg rounded-tl-none border border-gray-200 space-y-6">
+                           
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-xl font-bold text-primary-dark mb-4 border-b pb-2">Household Head & Location Details</h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                    <div class="md:col-span-3">
+                                        <label class="block text-sm font-medium text-gray-700 required mb-2">Head of Household Name</label>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div>
+                                                <input type="text" id="headSurname" name="headSurname" required class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="Surname (e.g., Lapid)">
+                                            </div>
+                                            <div>
+                                                <input type="text" id="headFirstname" name="headFirstname" required class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="First Name (e.g., Kyle)">
+                                            </div>
+                                            <div>
+                                                <input type="text" id="headMiddleInitial" name="headMiddleInitial" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="Middle Initial (e.g., G.)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+								<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+									<div>
+										<label for="headAge" class="block text-sm font-medium text-gray-700 required">Age</label>
+										<input type="number" id="headAge" name="headAge" required min="1" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="e.g., 21">
+									</div>
+
+									<div>
+										<label for="headGender" class="block text-sm font-medium text-gray-700 required">Gender</label>
+										<select id="headGender" name="headGender" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+											<option value="">Select Gender</option>
+											<option value="Male">Male</option>
+											<option value="Female">Female</option>
+										</select>
+									</div>
+
+									<div>
+										<label for="contact" class="block text-sm font-medium text-gray-700 required">Contact Number</label>
+										<input type="text" id="contact" name="contact" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light" placeholder="e.g., 09123456789">
+									</div>
+								</div>
+
+								<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+									
+									<div>
+										<label for="purok" class="block text-sm font-medium text-gray-700 required">Purok/Sitio</label>
+										<select id="purok" name="purok" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+											<option value="">Select Purok/Sitio</option>
+											<option value="Purok 1">Purok 1</option>
+											<option value="Purok 2">Purok 2</option>
+										</select>
+									</div>
+									
+									<div>
+										<label for="headCondition" class="block text-sm font-medium text-gray-700 required">Post-Disaster Condition</label>
+										<select id="headCondition" name="headCondition" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+											<option value="">Select Status</option>
+											<option value="Alive">Alive</option>
+											<option value="Injured">Injured</option>
+											<option value="Missing">Missing</option>
+											<option value="Deceased">Deceased</option>
+										</select>
+									</div>
+									
+									<div>
+										<label for="headLivelihood" class="block text-sm font-medium text-gray-700 required">Livelihood Status</label>
+										<select id="headLivelihood" name="headLivelihood" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+											<option value="">Select Status</option>
+											<option value="Employed">Employed</option>
+											<option value="Self-Employed">Self-Employed</option>
+											<option value="Unemployed">Unemployed</option>
+											<option value="Retired">Retired</option>                                          
+										</select>
+									</div>
+                                    
+                                    <div></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-xl font-bold text-primary-dark mb-4 border-b pb-2">Family Members</h3>
+                               
+                                <div id="familyMembersContainer" class="mb-4">
+                                    </div>
+
+                                <button type="button" onclick="addMember()" class="text-sm font-semibold text-primary-light hover:text-primary-dark flex items-center transition">
+                                    <i data-lucide="plus-circle" class="w-5 h-5 mr-1"></i> Add Another Family Member
+                                </button>
+                            </div>
+                           
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-xl font-bold text-primary-dark mb-4 border-b pb-2">Disaster Damage Assessment</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <label for="damageStatus" class="block text-sm font-medium text-gray-700 required">Damage Status (Percentage of Loss)</label>
+                                        <select id="damageStatus" name="damageStatus" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                            <option value="">Select Damage Level</option>
+                                            <option value="0">0% - Unaffected/No Damage</option>
+                                            <option value="25">25% - Minor Damage (Superficial)</option>
+                                            <option value="50">50% - Moderate Damage (Half Loss)</option>
+                                            <option value="75">75% - Major Damage (Structural Loss)</option>
+                                            <option value="100">100% - Total Loss/Destroyed</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="initialNeeds" class="block text-sm font-medium text-gray-700">Initial Needs (Comma Separated)</label>
+                                        <input type="text" id="initialNeeds" name="initialNeeds" placeholder="e.g., Food, Shelter Kit, Medicine" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    </div>
+                                </div>
+                            </div>
+                           
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-primary-dark to-primary-light text-white px-4 py-3 rounded-md text-lg font-semibold hover:opacity-90 transition shadow-lg mt-6">
+                            <i data-lucide="save" class="w-5 h-5 inline-block mr-2"></i> Save Household Profile
+                        </button>
+                    </form>
+                   
+                    <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-800">Master List of Affected Households</h2>
+                    
+                    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-md bg-white/70">
+                        
+                        <div class="md:col-span-2">
+                            <label for="masterlistSearch" class="block text-sm font-medium text-gray-700">Search Household (Name or ID)</label>
+                            <input type="text" id="masterlistSearch" oninput="filterAndSearchHouseholdList()" placeholder="Enter name or ID..." 
+                                class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                        </div>
+
+                        <div>
+                            <label for="masterlistPurokFilter" class="block text-sm font-medium text-gray-700">Filter by Purok/Sitio</label>
+                            <select id="masterlistPurokFilter" onchange="filterAndSearchHouseholdList()" 
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                <option value="">All Purok/Sitio</option>
+                                <option value="Purok 1">Purok 1</option>
+                                <option value="Purok 2">Purok 2</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="masterlistDamageFilter" class="block text-sm font-medium text-gray-700">Filter by Damage Status</label>
+                            <select id="masterlistDamageFilter" onchange="filterAndSearchHouseholdList()" 
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                <option value="">All Damage Status</option>
+                                <option value="0">0% - Unaffected</option>
+                                <option value="25">25% - Minor Damage</option>
+                                <option value="50">50% - Moderate Damage</option>
+                                <option value="75">75% - Major Damage</option>
+                                <option value="100">100% - Total Loss</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="bg-white p-0 rounded-lg shadow-md border border-gray-100 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Head of Household</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purok/Sitio</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Damage Status</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
+                                    <th scope="col" scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="householdTableBody" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading household data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </section>
+
+                <section id="AidDistributionRecords" class="content-section hidden">
+                   
+                    <div id="aidSaveMessage" class="hidden p-3 rounded-md text-sm mb-4"></div>
+
+                    <form id="aidDistributionForm" onsubmit="saveAidRecord(event)">
+                       
+                        <div class="relative -mb-px z-10">
+                            <div class="inline-block px-6 pt-3 pb-2 bg-gradient-to-r from-aid-color-dark to-aid-color text-white font-semibold text-xl border border-orange-600 border-b-0 rounded-t-md shadow-lg">
+                                Record Aid Distribution
+                            </div>
+                        </div>
+                       
+                        <div class="bg-gray-50 p-8 rounded-b-lg rounded-tr-lg rounded-tl-none border border-gray-200">
+                           
+                            <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-100 space-y-6">
+                               
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="multiSelectToggle" onclick="toggleMultiSelect(this.checked)" class="h-4 w-4 text-primary-dark border-gray-300 rounded-md focus:ring-primary-light">
+                                    <label for="multiSelectToggle" class="ml-2 block text-sm font-medium text-gray-700 font-semibold cursor-pointer">
+                                        Select Multiple Households (Bulk Distribution)
+                                    </label>
+                                </div>
+                               
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                   
+                                    <div id="singleRecipientContainer" class="md:col-span-4">
+                                        <label for="aidRecipientId" class="block text-sm font-medium text-gray-700 required">Recipient Household (Head Name)</label>
+                                        <select id="aidRecipientId" name="aidRecipientId" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                            <option value="">Select Single Household Head</option>
+                                        </select>
+                                    </div>
+                                   
+                                    <div id="multiRecipientContainer" class="md:col-span-4 hidden">
+                                        <label class="block text-sm font-medium text-gray-700 required">Select Recipients (Check All That Apply)</label>
+                                        <div id="multiSelectCheckboxes" class="mt-1 w-full p-2 border border-gray-300 rounded-md overflow-y-auto h-40 bg-gray-50">
+                                            <p class="text-xs text-gray-400 p-2">No households profiled yet.</p>
+                                        </div>
+                                        <button type="button" onclick="selectAllRecipients()" class="mt-2 text-xs font-semibold text-primary-light hover:text-primary-dark transition">
+                                            Select/Deselect All Visible
+                                        </button>
+                                    </div>
+                                   
+                                    <div class="md:col-span-1">
+                                        <label for="aidType" class="block text-sm font-medium text-gray-700 required">Type of Aid</label>
+                                        <select id="aidType" name="aidType" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                            <option value="">Select Aid Type</option>
+                                            <option value="Food Pack">Food Pack</option>
+                                            <option value="Shelter Kit">Shelter Kit (Tarpaulin/Lumber)</option>
+                                            <option value="Cash Aid">Cash Aid</option>
+                                            <option value="Hygiene Kit">Hygiene Kit</option>
+                                            <option value="Medicine">Medicine</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="md:col-span-1">
+                                        <label for="quantity" class="block text-sm font-medium text-gray-700">Quantity / Value</label>
+                                        <input type="text" id="quantity" name="quantity" placeholder="e.g., 1 box or Php 5,000" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    </div>
+                                   
+                                    <div class="md:col-span-1">
+                                        <label for="dateDistributed" class="block text-sm font-medium text-gray-700 required">Date Distributed</label>
+                                        <input type="date" id="dateDistributed" name="dateDistributed" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    </div>
+
+                                    <div class="md:col-span-1">
+                                        <label for="distributedBy" class="block text-sm font-medium text-gray-700">Distributed By (Optional)</label>
+                                        <input type="text" id="distributedBy" name="distributedBy" placeholder="e.g., MSWD or LGU" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    </div>
+                                   
+                                    <div class="md:col-span-4">
+                                        <label for="distributionNotes" class="block text-sm font-medium text-gray-700">Notes / Remarks</label>
+                                        <input type="text" id="distributionNotes" name="distributionNotes" placeholder="e.g., Given to spouse/received 2nd tranche" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                    </div>
+
+                                </div>
+                            </div> </div> 
+                        <button type="submit" class="w-full bg-gradient-to-r from-aid-color-dark to-aid-color text-white px-4 py-3 rounded-md text-lg font-semibold hover:opacity-90 transition shadow-lg mt-6">
+                            <i data-lucide="hand-heart" class="w-5 h-5 inline-block mr-2"></i> Record Aid Distribution
+                        </button>
+                    </form>
+                   
+                    <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-800">Distribution Record</h2>
+                    
+                    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-md bg-white/70">
+                        
+                        <div class="md:col-span-2">
+                            <label for="aidlistSearch" class="block text-sm font-medium text-gray-700">Search (Recipient Name, Aid Type, or ID)</label>
+                            <input type="text" id="aidlistSearch" oninput="filterAndSearchAidList()" placeholder="Enter name, aid type, or ID..." 
+                                class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                        </div>
+
+                        <div>
+                            <label for="aidlistAidTypeFilter" class="block text-sm font-medium text-gray-700">Filter by Aid Type</label>
+                            <select id="aidlistAidTypeFilter" onchange="filterAndSearchAidList()" 
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                <option value="">All Aid Types</option>
+                                <option value="Food Pack">Food Pack</option>
+                                <option value="Shelter Kit">Shelter Kit</option>
+                                <option value="Cash Aid">Cash Aid</option>
+                                <option value="Hygiene Kit">Hygiene Kit</option>
+                                <option value="Medicine">Medicine</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="aidlistRecipientFilter" class="block text-sm font-medium text-gray-700">Filter by Recipient Household</label>
+                            <select id="aidlistRecipientFilter" onchange="filterAndSearchAidList()" 
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                <option value="">All Recipients</option>
+                                </select>
+                        </div>
+                    </div>
+                    <div class="bg-white p-0 rounded-lg shadow-md border border-gray-100 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient (Head Name)</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aid Type</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aidRecordTableBody" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading aid distribution data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </section>
+
+                <section id="ReportsExports" class="content-section hidden">
+                   
+                    <div id="reportSaveMessage" class="hidden p-3 rounded-md text-sm mb-4"></div>
+
+                    <div class="relative -mb-px z-10">
+                        <div class="inline-block px-6 pt-3 pb-2 bg-gradient-to-r from-report-color-dark to-report-color text-white font-semibold text-xl border border-report-color border-b-0 rounded-t-md shadow-lg">
+                            Generate Official Reports
+                        </div>
+                    </div>
+                   
+                    <div class="bg-gray-50 p-8 rounded-b-lg rounded-tr-lg rounded-tl-none border border-gray-200">
+                        <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-100 space-y-6">
+                       
+                            <p class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Filter Data for Reporting</p>
+                           
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                <div>
+                                    <label for="reportPurokFilter" class="block text-sm font-medium text-gray-700">Filter by Purok/Sitio</label>
+                                    <select id="reportPurokFilter" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                        <option value="">All Purok/Sitio</option>
+                                        <option value="Purok 1">Purok 1</option>
+                                        <option value="Purok 2">Purok 2</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="reportDamageFilter" class="block text-sm font-medium text-gray-700">Filter by Damage Status</label>
+                                    <select id="reportDamageFilter" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light">
+                                        <option value="">All Damage Status</option>
+                                        <option value="0">0% - Unaffected</option>
+                                        <option value="25">25% - Minor Damage</option>
+                                        <option value="50">50% - Moderate Damage</option>
+                                        <option value="75">75% - Major Damage</option>
+                                        <option value="100">100% - Total Loss</option>
+                                    </select>
+                                </div>
+                               
+                                <div></div>
+                            </div>
+
+                            <p class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Generate Report Formats</p>
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <button onclick="generateReport('CSV')" class="flex-1 bg-gradient-to-r from-primary-dark to-primary-light text-white px-6 py-3 rounded-md font-semibold hover:opacity-90 transition shadow-md">
+                                    <i data-lucide="file-text" class="w-5 h-5 inline-block mr-2"></i> Export Raw Data (CSV)
+                                </button>
+                                <button onclick="generateReport('PDF')" class="flex-1 bg-gradient-to-r from-report-color-dark to-report-color text-white px-6 py-3 rounded-md font-semibold hover:opacity-90 transition shadow-md">
+                                    <i data-lucide="download" class="w-5 h-5 inline-block mr-2"></i> Generate Summary (PDF)
+                                </button>
+                            </div>
+                           
+                            <div id="reportOutput" class="hidden mt-6 p-4 rounded-md text-sm font-medium transition"></div>
+
+                        </div> </div> </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+</html>

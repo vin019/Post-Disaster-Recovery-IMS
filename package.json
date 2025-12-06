@@ -24,6 +24,10 @@
     "tailwindcss": "^4.1.17"
   },
   "dependencies": {
-    "post-disaster-recovery-ims": "file:"
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "post-disaster-recovery-ims": "file:",
+    "sqlite3": "^5.1.7"
   }
 }
