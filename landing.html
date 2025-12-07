@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDRIMS - Viewer Access Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -16,7 +18,7 @@
                         'primary-deep': '#00382E',
                         'primary-light': '#00796B',
                         'aid-color': '#A27500',
-                        
+
                         'mgm-dark': '#800000',
                         'mgm-deep': '#630000',
                         'mgm-light': '#A52A2A',
@@ -30,24 +32,29 @@
             font-family: 'Poppins', sans-serif;
             background-color: #f7f7f7;
         }
+
         ::-webkit-scrollbar {
             width: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #bdbdbd;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #888;
         }
+
         .hero-section {
             background-image: linear-gradient(rgba(0, 77, 64, 0.85), rgba(0, 121, 107, 0.75)), url('disaster.png');
             background-size: cover;
             background-position: center;
-            background-attachment: fixed; 
+            background-attachment: fixed;
             color: white;
             transition: background-image 0.5s ease;
         }
@@ -57,15 +64,17 @@
         }
 
         .modal {
-            transition: opacity 0.1s linear, visibility 0.1s linear; 
-            -webkit-backdrop-filter: blur(8px); 
-            backdrop-filter: blur(8px); 
+            transition: opacity 0.1s linear, visibility 0.1s linear;
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
         }
+
         .modal-open {
             overflow: hidden;
         }
     </style>
 </head>
+
 <body class="min-h-screen flex flex-col">
 
     <header class="bg-white shadow-md sticky top-0 z-30">
@@ -74,18 +83,22 @@
                 <div class="flex-shrink-0 flex items-center">
                     <i data-lucide="shield-check" class="w-7 h-7 text-primary-dark mr-2"></i>
                     <span class="text-xl font-extrabold text-primary-dark tracking-tight">PDRIMS</span>
-                    
-                    <button id="accessToggleButton" class="hidden sm:flex items-center text-sm font-medium text-gray-500 ml-2 pl-2 border-l border-gray-300 group" data-mode="viewer">
+
+                    <button id="accessToggleButton"
+                        class="hidden sm:flex items-center text-sm font-medium text-gray-500 ml-2 pl-2 border-l border-gray-300 group"
+                        data-mode="viewer">
                         <span id="accessToggleText">Viewer Access</span>
                     </button>
                 </div>
 
                 <nav class="flex items-center space-x-3">
-                    <button id="loginButton" class="flex items-center text-primary-dark font-medium px-4 py-2 rounded-lg border-2 border-transparent hover:border-primary-light transition duration-150">
+                    <button id="loginButton"
+                        class="flex items-center text-primary-dark font-medium px-4 py-2 rounded-lg border-2 border-transparent hover:border-primary-light transition duration-150">
                         <i data-lucide="log-in" class="w-4 h-4 mr-1"></i>
                         Login
                     </button>
-                    <button id="signUpButton" class="bg-primary-dark text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-primary-light transition duration-150 transform hover:scale-[1.02]">
+                    <button id="signUpButton"
+                        class="bg-primary-dark text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-primary-light transition duration-150 transform hover:scale-[1.02]">
                         <i data-lucide="user-plus" class="w-4 h-4 inline-block mr-1"></i>
                         Sign Up
                     </button>
@@ -101,9 +114,11 @@
                     Streamlining Recovery, From Your Barangay
                 </h1>
                 <p class="text-lg sm:text-xl font-light opacity-80 max-w-3xl mx-auto mb-8">
-                    Access public summaries and real-time status updates on post-disaster recovery efforts in your community.
+                    Access public summaries and real-time status updates on post-disaster recovery efforts in your
+                    community.
                 </p>
-                <a href="#feature-blocks" id="heroCtaLink" class="inline-flex items-center justify-center bg-white text-primary-dark font-bold text-base px-7 py-3 rounded-full shadow-xl hover:bg-gray-100 transition duration-300 transform hover:scale-105">
+                <a href="#feature-blocks" id="heroCtaLink"
+                    class="inline-flex items-center justify-center bg-white text-primary-dark font-bold text-base px-7 py-3 rounded-full shadow-xl hover:bg-gray-100 transition duration-300 transform hover:scale-105">
                     View Public Reports
                     <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
                 </a>
@@ -112,30 +127,39 @@
 
         <div id="feature-blocks" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-16 sm:-mt-20 relative z-10">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer" data-action="explore-damage">
+
+                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer"
+                    data-action="explore-damage">
                     <div class="text-5xl font-extrabold mb-3 text-primary-light">1</div>
                     <h3 class="text-xl font-bold mb-2">Household Damage Status</h3>
-                    <p class="text-sm text-gray-700 mb-4">See aggregated data on the extent of damage to homes across different puroks and sitios.</p>
-                    <a href="#" data-action="explore-damage" class="action-link mt-3 text-xs font-medium border-b border-primary-dark pb-1 text-primary-dark hover:opacity-75 inline-flex items-center">
+                    <p class="text-sm text-gray-700 mb-4">See aggregated data on the extent of damage to homes across
+                        different puroks and sitios.</p>
+                    <a href="#" data-action="explore-damage"
+                        class="action-link mt-3 text-xs font-medium border-b border-primary-dark pb-1 text-primary-dark hover:opacity-75 inline-flex items-center">
                         Explore Data <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
                     </a>
                 </div>
 
-                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer" data-action="check-aid">
+                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer"
+                    data-action="check-aid">
                     <div class="text-5xl font-extrabold mb-3 text-aid-color">2</div>
                     <h3 class="text-xl font-bold mb-2">Aid Allocation Reports</h3>
-                    <p class="text-sm text-gray-700 mb-4">View transparency reports detailing the types and quantities of aid distributed by date and location.</p>
-                    <a href="#" data-action="check-aid" class="action-link mt-3 text-xs font-medium border-b border-aid-color pb-1 text-aid-color hover:opacity-75 inline-flex items-center">
+                    <p class="text-sm text-gray-700 mb-4">View transparency reports detailing the types and quantities
+                        of aid distributed by date and location.</p>
+                    <a href="#" data-action="check-aid"
+                        class="action-link mt-3 text-xs font-medium border-b border-aid-color pb-1 text-aid-color hover:opacity-75 inline-flex items-center">
                         Check Records <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
                     </a>
                 </div>
 
-                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer" data-action="see-timeline">
+                <div class="p-8 rounded-lg shadow-xl bg-gray-50 text-gray-900 transition duration-300 hover:shadow-2xl hover:bg-white cursor-pointer"
+                    data-action="see-timeline">
                     <div class="text-5xl font-extrabold mb-3 text-primary-dark">3</div>
                     <h3 class="text-xl font-bold mb-2">Overall Recovery Progress</h3>
-                    <p class="text-sm text-gray-700 mb-4">Monitor the barangay's overall recovery percentage based on official assessments and data input.</p>
-                    <a href="#" data-action="see-timeline" class="action-link mt-3 text-xs font-medium border-b border-primary-dark pb-1 text-primary-dark hover:opacity-75 inline-flex items-center">
+                    <p class="text-sm text-gray-700 mb-4">Monitor the barangay's overall recovery percentage based on
+                        official assessments and data input.</p>
+                    <a href="#" data-action="see-timeline"
+                        class="action-link mt-3 text-xs font-medium border-b border-primary-dark pb-1 text-primary-dark hover:opacity-75 inline-flex items-center">
                         See Timeline <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
                     </a>
                 </div>
@@ -147,9 +171,11 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Are you a Barangay Official?</h2>
                 <p class="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
-                    Log in to your account to manage household profiles, record aid distribution, and generate official documentation.
+                    Log in to your account to manage household profiles, record aid distribution, and generate official
+                    documentation.
                 </p>
-                <button id="accessManagementButton" class="bg-primary-dark text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:bg-primary-light transition duration-300 transform hover:translate-y-0.5">
+                <button id="accessManagementButton"
+                    class="bg-primary-dark text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:bg-primary-light transition duration-300 transform hover:translate-y-0.5">
                     <i data-lucide="lock" class="w-5 h-5 inline-block mr-2"></i> Access Management Portal
                 </button>
             </div>
@@ -160,13 +186,14 @@
     <footer id="mainFooter" class="bg-primary-deep text-white py-12 mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div id="footerGrid" class="grid grid-cols-2 md:grid-cols-4 gap-8 pb-8 border-b border-white/20 mb-6">
-                
+
                 <div>
                     <span class="text-xl font-extrabold tracking-tight mb-2 flex items-center">
                         <i data-lucide="shield-check" class="w-6 h-6 mr-1"></i> PDRIMS
                     </span>
                     <p class="text-xs mt-2 opacity-75">
-                        Post-Disaster Recovery & Information Management System. Streamlining Recovery, From Your Barangay 
+                        Post-Disaster Recovery & Information Management System. Streamlining Recovery, From Your
+                        Barangay
                     </p>
                 </div>
 
@@ -209,14 +236,15 @@
         </div>
     </footer>
 
-    <div id="universalModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 invisible opacity-0">
+    <div id="universalModal"
+        class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 invisible opacity-0">
         <div id="modalContentWrapper" class="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6 relative modal-content">
             <button id="closeModalButton" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
-            
+
             <div id="modalBody">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -229,14 +257,14 @@
         const loginButton = document.getElementById('loginButton');
         const signUpButton = document.getElementById('signUpButton');
         const accessManagementButton = document.getElementById('accessManagementButton');
-        const heroCtaLink = document.getElementById('heroCtaLink'); 
-        const mainFooter = document.getElementById('mainFooter');       
+        const heroCtaLink = document.getElementById('heroCtaLink');
+        const mainFooter = document.getElementById('mainFooter');
         const featureLinks = document.querySelectorAll('.action-link');
         const featureBlocks = document.querySelectorAll('[data-action]');
         const accessToggleButton = document.getElementById('accessToggleButton');
         const managementCtaSection = document.getElementById('managementCtaSection');
-        const modalContentWrapper = document.getElementById('modalContentWrapper'); 
-        const heroSection = document.querySelector('.hero-section'); 
+        const modalContentWrapper = document.getElementById('modalContentWrapper');
+        const heroSection = document.querySelector('.hero-section');
 
         const VIEWER_CLASSES = {
             login: ['text-primary-dark', 'hover:border-primary-light'],
@@ -252,7 +280,7 @@
         };
 
         let currentAccessMode = 'viewer';
-        let signupData = {}; 
+        let signupData = {};
 
         function toggleModeStyles(toMode) {
             const isManagement = toMode === 'management';
@@ -267,27 +295,27 @@
 
             heroCtaLink.classList.remove(...from.ctaText);
             heroCtaLink.classList.add(...to.ctaText);
-            
+
             accessManagementButton.classList.remove(...from.signup);
             accessManagementButton.classList.add(...to.signup);
-            
+
             mainFooter.classList.remove(...from.footer);
             mainFooter.classList.add(...to.footer);
 
         }
 
         function switchToViewer() {
-            if (currentAccessMode === 'viewer') return; 
-            
+            if (currentAccessMode === 'viewer') return;
+
             const text = document.getElementById('accessToggleText');
             const toggleButton = document.getElementById('accessToggleButton');
 
             if (text) text.textContent = 'Viewer Access';
             if (toggleButton) toggleButton.setAttribute('data-mode', 'viewer');
             document.title = 'PDRIMS - Viewer Access Portal';
-            
+
             managementCtaSection.classList.add('hidden');
-            heroSection.classList.remove('hero-management-mode'); 
+            heroSection.classList.remove('hero-management-mode');
 
             toggleModeStyles('viewer');
 
@@ -295,43 +323,43 @@
         }
 
         function switchToManagement() {
-            if (currentAccessMode === 'management') return; 
-            
+            if (currentAccessMode === 'management') return;
+
             const text = document.getElementById('accessToggleText');
             const toggleButton = document.getElementById('accessToggleButton');
 
             if (text) text.textContent = 'Management Access';
             if (toggleButton) toggleButton.setAttribute('data-mode', 'management');
             document.title = 'PDRIMS - Management Access Portal';
-            
+
             managementCtaSection.classList.remove('hidden');
-            heroSection.classList.add('hero-management-mode'); 
+            heroSection.classList.add('hero-management-mode');
 
             toggleModeStyles('management');
 
             currentAccessMode = 'management';
         }
 
-        function showModal(contentHTML, maxWidthClass = 'max-w-xl') { 
+        function showModal(contentHTML, maxWidthClass = 'max-w-xl') {
             modalBody.innerHTML = contentHTML;
-            document.body.classList.add('modal-open'); 
+            document.body.classList.add('modal-open');
 
-            const maxWClasses = ['max-w-xl', 'max-w-3xl', 'max-w-4xl', 'max-w-2xl', 'max-w-lg', 'max-w-md']; 
+            const maxWClasses = ['max-w-xl', 'max-w-3xl', 'max-w-4xl', 'max-w-2xl', 'max-w-lg', 'max-w-md'];
             maxWClasses.forEach(c => modalContentWrapper.classList.remove(c));
             modalContentWrapper.classList.add(maxWidthClass);
-            
+
             universalModal.classList.remove('invisible', 'opacity-0');
             universalModal.classList.add('visible', 'opacity-100');
-            lucide.createIcons(); 
+            lucide.createIcons();
         }
 
         function hideModal() {
-            document.body.classList.remove('modal-open'); 
+            document.body.classList.remove('modal-open');
             universalModal.classList.remove('visible', 'opacity-100');
             universalModal.classList.add('invisible', 'opacity-0');
             modalBody.innerHTML = '';
         }
-        
+
         closeModalButton.addEventListener('click', hideModal);
         universalModal.addEventListener('click', (e) => {
             if (e.target === universalModal) {
@@ -384,7 +412,7 @@
                     <div class="col-span-1 mb-4"><label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label><input type="number" id="age" name="age" class="w-full px-3 py-2 border border-gray-300 rounded-lg ${focusRing} transition" min="12" max="120" required value="${getVal('age')}"></div>
                 </div>
             `;
-            
+
             const commonFields = `
                 <div class="grid grid-cols-3 gap-2 mb-4">
                     <div class="col-span-1"><label for="surname" class="block text-sm font-medium text-gray-700 mb-1">Surname</label><input type="text" id="surname" name="surname" class="w-full px-3 py-2 border border-gray-300 rounded-lg ${focusRing} transition" required value="${getVal('surname')}"></div>
@@ -409,7 +437,7 @@
                 </form>
             `;
         }
-        
+
         function getSignupStep2FormModal(isMember) {
             const title = isMember ? 'Purok Member Registration (Step 2 of 2)' : 'General Viewer Registration (Step 2 of 2)';
             const subtitle = 'Create your secure login credentials.';
@@ -486,7 +514,7 @@
                     </form>
                 `;
             }
-            
+
             return getPurokQuestionModal();
         }
 
@@ -523,20 +551,20 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             })
-            .then(res => {
-                if (!res.ok) return res.json().then(err => { throw new Error(err.error || 'Login failed') });
-                return res.json();
-            });
+                .then(res => {
+                    if (!res.ok) return res.json().then(err => { throw new Error(err.error || 'Login failed') });
+                    return res.json();
+                });
         }
 
         function handleFormSubmit(event, formName) {
             event.preventDefault();
-            
+
             if (formName.includes('Authentication') || formName.includes('Management ID Verification')) {
                 const isManagement = formName.includes('Management ID Verification');
                 const usernameInput = isManagement ? document.getElementById('officialId') : document.getElementById('email');
                 const passwordInput = isManagement ? document.getElementById('officialPin') : document.getElementById('password');
-                
+
                 const username = usernameInput ? usernameInput.value : '';
                 const password = passwordInput ? passwordInput.value : '';
 
@@ -549,7 +577,7 @@
                     .then(data => {
                         console.log("Login Success:", data);
                         sessionStorage.setItem('currentUser', JSON.stringify(data));
-                        
+
                         if (data.role === 'admin') {
                             window.location.href = 'admin.html';
                         } else if (data.role === 'official') {
@@ -560,18 +588,18 @@
                             }
                         } else {
                             // Viewer Mode
-                             hideModal();
-                             switchToViewer();
-                             // Visual feedback
-                             const loginBtn = document.getElementById('loginButton');
-                             if(loginBtn) {
-                                 // Fallback if data.name is missing (server mismatch)
-                                 const displayName = data.name || `${data.surname}, ${data.first_name}`;
-                                 loginBtn.innerHTML = '<i data-lucide="user" class="w-4 h-4 mr-1"></i> ' + displayName.split(',')[0];
-                                 loginBtn.onclick = null; // Disable click or make it logout
-                             }
-                             document.getElementById('signUpButton').style.display = 'none';
-                             alertMessage(`Welcome back, ${data.name}!`, "info");
+                            hideModal();
+                            switchToViewer();
+                            // Visual feedback
+                            const loginBtn = document.getElementById('loginButton');
+                            if (loginBtn) {
+                                // Fallback if data.name is missing (server mismatch)
+                                const displayName = data.name || `${data.surname}, ${data.first_name}`;
+                                loginBtn.innerHTML = '<i data-lucide="user" class="w-4 h-4 mr-1"></i> ' + displayName.split(',')[0];
+                                loginBtn.onclick = null; // Disable click or make it logout
+                            }
+                            document.getElementById('signUpButton').style.display = 'none';
+                            alertMessage(`Welcome back, ${data.name}!`, "info");
                         }
                     })
                     .catch(err => {
@@ -624,14 +652,14 @@
         function showPurokMembershipQuestion() {
             showModal(getPurokQuestionModal());
         }
-        
+
         function showSignupForm(isMember) {
             signupData = {};
-            showSignupStep1(isMember); 
+            showSignupStep1(isMember);
         }
 
         function showSignupStep1(isMember) {
-            showModal(getSignupStep1FormModal(isMember), 'max-w-3xl'); 
+            showModal(getSignupStep1FormModal(isMember), 'max-w-3xl');
         }
 
         function showSignupStep2(isMember) {
@@ -662,58 +690,218 @@
         if (accessManagementButton) {
             accessManagementButton.addEventListener('click', showManagementPortalModal);
         }
-        
+
+        // --- PUBLIC DATA & REPORTS LOGIC ---
+
+        async function fetchPublicData() {
+            try {
+                const [householdsRes, aidRes] = await Promise.all([
+                    fetch('/api/households'),
+                    fetch('/api/aid-records')
+                ]);
+
+                const households = await householdsRes.json();
+                const aidRecords = await aidRes.json();
+
+                return { households, aidRecords };
+            } catch (error) {
+                console.error("Error fetching public data:", error);
+                alertMessage("Unable to load public reports at this time.", "error");
+                return { households: [], aidRecords: [] };
+            }
+        }
+
+        async function renderDamageModal() {
+            showModal(`
+                <h2 class="text-2xl font-bold text-primary-dark mb-4">Household Damage Status</h2>
+                <div class="animate-pulse flex space-x-4"><div class="flex-1 space-y-4 py-1"><div class="h-4 bg-gray-200 rounded w-3/4"></div><div class="space-y-2"><div class="h-4 bg-gray-200 rounded"></div><div class="h-4 bg-gray-200 rounded w-5/6"></div></div></div></div>
+            `);
+
+            const { households } = await fetchPublicData();
+
+            // calculate counts
+            // Normalize purok strings to avoid case/spacing issues if any
+            const cleanPurok = (p) => (p || '').trim();
+            const p1 = households.filter(h => cleanPurok(h.purok) === 'Purok 1').length;
+            const p2 = households.filter(h => cleanPurok(h.purok) === 'Purok 2').length;
+            const p3 = households.filter(h => cleanPurok(h.purok) === 'Purok 3').length;
+
+            const max = Math.max(p1, p2, p3, 1); // Avoid div by zero
+
+            // Helper to create a bar
+            const createBar = (label, count, colorClass) => {
+                const width = Math.max((count / max) * 100, 5); // Min 5% width for visibility
+                return `
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                            <span>${label}</span>
+                            <span class="font-bold">${count}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4">
+                            <div class="${colorClass} h-4 rounded-full transition-all duration-1000 ease-out" style="width: ${width}%"></div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const content = `
+                <h2 class="text-2xl font-bold text-primary-dark mb-2">Household Damage Status</h2>
+                <p class="text-sm text-gray-500 mb-6">Aggregated damage reports per Purok/Sitio.</p>
+                
+                <div class="mt-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
+                    ${createBar('Purok 1', p1, 'bg-primary-dark')}
+                    ${createBar('Purok 2', p2, 'bg-primary-light')}
+                    ${createBar('Purok 3', p3, 'bg-aid-color')}
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button onclick="hideModal()" class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">Close</button>
+                </div>
+            `;
+            showModal(content, 'max-w-xl');
+            lucide.createIcons();
+        }
+
+        async function renderAidModal() {
+            showModal(`
+                <h2 class="text-2xl font-bold text-aid-color mb-4">Aid Allocation Reports</h2>
+                <div class="animate-pulse flex space-x-4"><div class="flex-1 space-y-4 py-1"><div class="h-4 bg-gray-200 rounded w-3/4"></div><div class="space-y-2"><div class="h-4 bg-gray-200 rounded"></div></div></div></div>
+            `);
+
+            const { aidRecords } = await fetchPublicData();
+
+            // Simple aggregate
+            const totalItems = aidRecords.reduce((sum, r) => sum + parseInt(r.quantity || 0), 0);
+            const recent = aidRecords.sort((a, b) => new Date(b.date_distributed) - new Date(a.date_distributed)).slice(0, 5);
+
+            const rows = recent.map(r => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4 text-sm font-medium text-gray-800">${r.aid_type}</td>
+                    <td class="py-3 px-4 text-sm text-gray-600">${r.quantity}</td>
+                    <td class="py-3 px-4 text-sm text-gray-600">${r.date_distributed}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500 text-right text-xs">ID: ***${String(r.recipient_id).slice(-4)}</td>
+                </tr>
+            `).join('');
+
+            const content = `
+                <h2 class="text-2xl font-bold text-aid-color mb-2">Aid Allocation Reports</h2>
+                <p class="text-sm text-gray-500 mb-6">Transparency report on recent distributions.</p>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-orange-50 p-4 rounded-lg border border-orange-100">
+                        <p class="text-xs text-orange-800 uppercase font-semibold">Total Aid Distributed</p>
+                        <p class="text-3xl font-bold text-aid-color mt-1">${totalItems}</p>
+                        <p class="text-xs text-orange-600 mt-1">Units (All Types)</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <p class="text-xs text-blue-800 uppercase font-semibold">Distributions Recorded</p>
+                        <p class="text-3xl font-bold text-blue-700 mt-1">${aidRecords.length}</p>
+                        <p class="text-xs text-blue-600 mt-1">Transactions</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="py-2 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
+                                <th class="py-2 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Qty</th>
+                                <th class="py-2 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                                <th class="py-2 px-4 text-right text-xs font-semibold text-gray-500 uppercase">Ref</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.length ? rows : '<tr><td colspan="4" class="p-4 text-center text-sm text-gray-500">No records found.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                     <button onclick="hideModal()" class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">Close</button>
+                </div>
+            `;
+            showModal(content, 'max-w-2xl');
+        }
+
+        async function renderRecoveryModal() {
+            showModal(`
+                <h2 class="text-2xl font-bold text-primary-dark mb-4">Overall Recovery Progress</h2>
+                <div class="animate-pulse flex space-x-4"><div class="flex-1 space-y-4 py-1"><div class="h-4 bg-gray-200 rounded w-3/4"></div><div class="space-y-2"><div class="h-4 bg-gray-200 rounded"></div></div></div></div>
+            `);
+
+            const { households, aidRecords } = await fetchPublicData();
+
+            const total = households.length;
+            const recipientIds = new Set(aidRecords.map(r => r.recipient_id));
+            const recoveredCount = recipientIds.size; // "Recovered" = Received at least some aid
+
+            const percentage = total > 0 ? Math.round((recoveredCount / total) * 100) : 0;
+
+            const content = `
+                <h2 class="text-2xl font-bold text-primary-dark mb-2">Overall Recovery Progress</h2>
+                <p class="text-sm text-gray-500 mb-8">Barangay-wide recovery status based on aid coverage.</p>
+
+                 <div class="flex justify-center items-center h-56 relative mb-8">
+                    <!-- Donut Chart Container -->
+                    <div class="w-48 h-48 rounded-full bg-gray-200 relative shadow-xl"
+                        style="background: conic-gradient(#00796B ${percentage}%, #e5e7eb 0);">
+                        <!-- Inner Circle -->
+                        <div class="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+                            <p class="text-5xl font-extrabold text-primary-dark tracking-tighter">
+                                ${percentage}%
+                            </p>
+                            <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Recovered</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-center">
+                     <div>
+                        <p class="text-2xl font-bold text-gray-800">${recoveredCount}</p>
+                        <p class="text-xs text-gray-500 uppercase">Households Aided</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-800">${total}</p>
+                        <p class="text-xs text-gray-500 uppercase">Total Affected</p>
+                    </div>
+                </div>
+
+                 <div class="mt-8 flex justify-end">
+                     <button onclick="hideModal()" class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">Close</button>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        // Connect Feature Cards
+        const handleCardClick = (action) => {
+            const user = sessionStorage.getItem('currentUser');
+            if (!user) {
+                // Not Logged In
+                alertMessage("Restricted Access: You must be logged in to view official reports.", "info");
+                toggleAuthModal('Login');
+                return;
+            }
+
+            if (action === 'explore-damage') renderDamageModal();
+            else if (action === 'check-aid') renderAidModal();
+            else if (action === 'see-timeline') renderRecoveryModal();
+        };
+
         featureLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
+            link.addEventListener('click', function (e) {
                 e.preventDefault();
-                const action = this.getAttribute('data-action');
-                showModal(getPlaceholderModal(action));
+                e.stopPropagation(); // Stop bubbling
+                handleCardClick(this.getAttribute('data-action'));
             });
         });
 
         featureBlocks.forEach(block => {
-            block.addEventListener('click', function(e) {
+            block.addEventListener('click', function (e) {
                 if (e.target.tagName.toLowerCase() === 'a' || e.target.closest('.action-link')) return;
-                
-                const action = this.getAttribute('data-action');
-                showModal(getPlaceholderModal(action));
+                handleCardClick(this.getAttribute('data-action'));
             });
         });
-
-        function getPlaceholderModal(action) {
-            let title, message;
-            const buttonBg = currentAccessMode === 'management' ? 'bg-mgm-dark hover:bg-mgm-light' : 'bg-primary-dark hover:bg-primary-light';
-            const highlightColor = currentAccessMode === 'management' ? 'text-mgm-light' : 'text-primary-light';
-            const highlightBorder = currentAccessMode === 'management' ? 'border-mgm-light' : 'border-primary-light';
-            const highlightText = currentAccessMode === 'management' ? 'text-mgm-dark' : 'text-primary-dark';
-
-
-            if (action === 'explore-damage') {
-                title = "Household Damage Status";
-                message = "This page will display interactive maps and charts showing aggregate household damage data by location (purok/sitio).";
-            } else if (action === 'check-aid') {
-                title = "Aid Allocation Reports";
-                message = "This page will feature a searchable database and summary reports on aid distribution and transparency records.";
-            } else if (action === 'see-timeline') {
-                title = "Overall Recovery Progress";
-                message = "This page will show a dynamic timeline and overall percentage meter of the barangay's post-disaster recovery.";
-            } else {
-                title = "Information";
-                message = "No specific content defined for this action.";
-            }
-
-            return `
-                <h2 class="text-2xl font-bold ${highlightColor} mb-2">${title}</h2>
-                <p class="text-sm text-gray-500 mb-4">Action Placeholder</p>
-                <div class="p-4 bg-gray-100 rounded-lg border-l-4 ${highlightBorder}">
-                    <p class="text-gray-700">${message}</p>
-                    <p class="mt-2 text-xs font-semibold ${highlightText}">NOTE: The backend is currently not connected.</p>
-                </div>
-                <button onclick="hideModal()" class="mt-6 w-full ${buttonBg} text-white font-semibold py-2 rounded-lg transition">
-                    Got It
-                </button>
-            `;
-        }
 
         function handleStep1Submit(event, isMember) {
             event.preventDefault();
@@ -727,7 +915,7 @@
                 contact: form.contact.value,
                 age: form.age.value,
             };
-            
+
             if (isMember) {
                 const isHead = form.isHead.checked;
                 const householdHead = form.householdHead.value;
@@ -746,20 +934,20 @@
             showSignupStep2(isMember);
         }
 
-                function handleStep2Submit(event, isMember) {
+        function handleStep2Submit(event, isMember) {
             event.preventDefault();
             const form = event.target;
-            
+
             const password = form.password.value;
             const confirmPassword = form.confirmPassword.value;
-            
+
             if (password !== confirmPassword) {
                 alertMessage("Passwords do not match.", "error");
                 return;
             }
 
             signupData.email = form.email.value;
-            signupData.password = password; 
+            signupData.password = password;
 
             // Prepare Payload
             // Prepare Payload to EXACTLY match Database Columns:
@@ -775,36 +963,35 @@
                 purok: signupData.purok || null,
                 household_head: signupData.householdHead || null,
                 is_head: signupData.isHead ? 1 : 0,
-                role: 'viewer' 
+                role: 'viewer'
             };
 
             // Send to Real Database
-            fetch('/api/users', { 
+            fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newUser)
             })
-            .then(res => {
-                if (!res.ok) return res.json().then(err => { throw new Error(err.error || 'Registration failed') });
-                return res.json();
-            })
-            .then(data => {
-                // Success
-                signupData = {}; 
-                hideModal();
-                showModal(`
+                .then(res => {
+                    if (!res.ok) return res.json().then(err => { throw new Error(err.error || 'Registration failed') });
+                    return res.json();
+                })
+                .then(data => {
+                    signupData = {};
+                    hideModal();
+                    showModal(`
                     <h2 class="text-2xl font-bold text-green-600 mb-2">Registration Successful!</h2>
                     <p class="text-sm text-gray-500 mb-4">Your account has been created.</p>
                     <button onclick="toggleAuthModal('Login')" class="mt-6 w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition">
                         Go to Login
                     </button>
                 `);
-            })
-            .catch(err => {
-                alertMessage("Registration Failed: " + err.message, "error");
-            });
+                })
+                .catch(err => {
+                    alertMessage("Registration Failed: " + err.message, "error");
+                });
         }
-        
+
         function alertMessage(message, type = 'info') {
             const colors = {
                 info: { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-800' },
@@ -827,20 +1014,21 @@
         window.handleAuthSubmit = (event, type) => handleFormSubmit(event, type + ' Authentication');
         window.handleManagementSubmit = (event) => handleFormSubmit(event, 'Management ID Verification');
         window.handleRequestSubmit = (event) => handleFormSubmit(event, 'Account Request for Admin Approval');
-        window.handleStep1Submit = handleStep1Submit; 
-        window.handleStep2Submit = handleStep2Submit; 
+        window.handleStep1Submit = handleStep1Submit;
+        window.handleStep2Submit = handleStep2Submit;
         window.toggleAuthModal = toggleAuthModal;
         window.showManagementPortalModal = showManagementPortalModal;
         window.showRequestAccountModal = showRequestAccountModal;
         window.showPurokMembershipQuestion = showPurokMembershipQuestion;
         window.showSignupForm = showSignupForm;
-        window.showSignupStep1 = showSignupStep1; 
-        window.showSignupStep2 = showSignupStep2; 
+        window.showSignupStep1 = showSignupStep1;
+        window.showSignupStep2 = showSignupStep2;
         window.hideModal = hideModal;
         window.switchToManagement = switchToManagement;
-        window.switchToViewer = switchToViewer; 
-        window.alertMessage = alertMessage; 
+        window.switchToViewer = switchToViewer;
+        window.alertMessage = alertMessage;
 
     </script>
 </body>
+
 </html>
